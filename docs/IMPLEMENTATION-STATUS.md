@@ -6,7 +6,7 @@
 
 ## Current Stage
 
-- 当前目标：`Phase 0`
+- 当前目标：`Phase 1`
 - 当前状态：`已完成`
 - 最后更新：`2026-04-22`
 
@@ -108,13 +108,15 @@
 补充：
 
 - 已在仓库内解压本地 JDK：`/home/ykx/jchat/.local/jdk/jdk-21.0.10+7`
-- 已新增环境脚本：[.local/use-local-java.sh](/home/ykx/jchat/.local/use-local-java.sh)
+- 已新增环境脚本：[scripts/use-jchat-env.sh](/home/ykx/jchat/scripts/use-jchat-env.sh)
 - 已在仓库内解压本地 Gradle：`/home/ykx/jchat/.local/gradle-dist/gradle-8.12.1`
 - 已生成 `backend/gradlew`
+- 已将 `JAVA_HOME`、Gradle bin、`GRADLE_USER_HOME` 写入 `~/.bashrc`
 
 影响：
 
 - 已可在不安装系统级 Java/Gradle 的前提下运行 backend
+- 新开 shell 后可直接在 `backend/` 下执行 `gradle test`、`gradle bootRun`
 
 ### 前端依赖验证
 
@@ -149,13 +151,68 @@ Phase 0 主验收项已经完成：
 
 ---
 
+## Phase 1 已完成
+
+### backend-core 基础设施
+
+- 已新增 [/backend/src/main/java/com/jchat/config/AppProperties.java](/home/ykx/jchat/backend/src/main/java/com/jchat/config/AppProperties.java)
+- 已新增 [/backend/src/main/java/com/jchat/config/AsyncConfig.java](/home/ykx/jchat/backend/src/main/java/com/jchat/config/AsyncConfig.java)
+- 已新增 [/backend/src/main/java/com/jchat/config/DevCorsConfig.java](/home/ykx/jchat/backend/src/main/java/com/jchat/config/DevCorsConfig.java)
+- 已新增 [/backend/src/main/java/com/jchat/config/JacksonConfig.java](/home/ykx/jchat/backend/src/main/java/com/jchat/config/JacksonConfig.java)
+- 已新增 [/backend/src/main/java/com/jchat/config/OpenApiConfig.java](/home/ykx/jchat/backend/src/main/java/com/jchat/config/OpenApiConfig.java)
+- 已新增 [/backend/src/main/java/com/jchat/config/RedisConfig.java](/home/ykx/jchat/backend/src/main/java/com/jchat/config/RedisConfig.java)
+- 已新增 [/backend/src/main/java/com/jchat/config/WebClientConfig.java](/home/ykx/jchat/backend/src/main/java/com/jchat/config/WebClientConfig.java)
+- 已新增 [/backend/src/main/java/com/jchat/common/api/ApiException.java](/home/ykx/jchat/backend/src/main/java/com/jchat/common/api/ApiException.java)
+- 已新增 [/backend/src/main/java/com/jchat/common/api/ErrorCode.java](/home/ykx/jchat/backend/src/main/java/com/jchat/common/api/ErrorCode.java)
+- 已新增 [/backend/src/main/java/com/jchat/common/api/ErrorResponse.java](/home/ykx/jchat/backend/src/main/java/com/jchat/common/api/ErrorResponse.java)
+- 已新增 [/backend/src/main/java/com/jchat/common/api/GlobalExceptionHandler.java](/home/ykx/jchat/backend/src/main/java/com/jchat/common/api/GlobalExceptionHandler.java)
+- 已新增 [/backend/src/main/java/com/jchat/common/web/CorrelationIdFilter.java](/home/ykx/jchat/backend/src/main/java/com/jchat/common/web/CorrelationIdFilter.java)
+- 已新增 [/backend/src/main/java/com/jchat/common/web/RequestIds.java](/home/ykx/jchat/backend/src/main/java/com/jchat/common/web/RequestIds.java)
+- 已新增 [/backend/src/main/resources/application-dev.yml](/home/ykx/jchat/backend/src/main/resources/application-dev.yml)
+- 已新增 [/backend/src/main/resources/application-prod.yml](/home/ykx/jchat/backend/src/main/resources/application-prod.yml)
+- 已新增 [/backend/src/main/resources/db/migration/V1__init_schema.sql](/home/ykx/jchat/backend/src/main/resources/db/migration/V1__init_schema.sql)
+- 已新增 [/backend/src/test/java/com/jchat/common/api/GlobalExceptionHandlerTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/common/api/GlobalExceptionHandlerTest.java)
+- 已更新 [/backend/build.gradle.kts](/home/ykx/jchat/backend/build.gradle.kts)
+- 已更新 [/backend/src/main/java/com/jchat/JchatApplication.java](/home/ykx/jchat/backend/src/main/java/com/jchat/JchatApplication.java)
+- 已更新 [/backend/src/main/resources/application.yml](/home/ykx/jchat/backend/src/main/resources/application.yml)
+- 已更新 [/backend/src/test/java/com/jchat/health/HealthControllerTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/health/HealthControllerTest.java)
+
+当前后端已具备：
+
+- `application.yml` / `application-dev.yml` / `application-prod.yml`
+- `AppProperties` 类型安全配置绑定
+- `WebClient`、`OpenAPI`、`Jackson`、虚拟线程 `Async`、`RedisTemplate` 基础配置
+- 全局异常体系：`ApiException`、`ErrorCode`、统一错误响应 `ErrorResponse`
+- request id filter + MDC 注入，响应头返回 `X-Request-Id`
+- Flyway `V1__init_schema.sql` 最小闭环迁移
+- Swagger / OpenAPI 文档入口
+
+### Phase 1 验证结果
+
+已完成验证：
+
+- `gradle test` 已通过
+- backend 启动成功
+- Flyway 启动时自动执行 `V1__init_schema.sql`
+- `GET /api/v1/health` 返回 `200` + `{"status":"UP"}`
+- `GET /v3/api-docs` 返回 `200`
+- `GET /swagger-ui.html` 返回 `302` 跳转到 `/swagger-ui/index.html`
+- 未命中路由返回统一 JSON 错误格式，包含 `code` / `message` / `requestId`
+
+本阶段范围控制：
+
+- 仅实现 `backend-core`
+- 未进入 `auth`、`chat`、`conversation` 业务 service / controller / entity
+- Flyway 仅保留路线图约定的最小 `V1` schema，不包含 `pgvector`
+
+---
+
 ## 下一步建议顺序
 
-1. 进入 `Phase 1`，补 backend-core 基础设施
-2. 增加 `application-dev.yml`、`application-prod.yml`
-3. 增加全局异常、OpenAPI、WebClient、Redis 配置
-4. 加入 Flyway 初始迁移
-5. 然后再进入 auth / chat 业务
+1. 进入 `Phase 2`，只做 frontend skeleton 的强化或验收补齐
+2. 或直接按路线图进入 `Phase 3`，实现 auth 后端主链
+3. `auth/chat` 开工前先基于 `V1` schema 增加 JPA entity / repository
+4. 保持 `backend-core` 不承载业务逻辑，只做公共支撑
 
 ---
 

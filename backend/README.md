@@ -6,22 +6,25 @@ Spring Boot 3.4 后端，jchat 项目的 Java 服务模块。
 
 ## 当前状态
 
-当前处于 `Phase 0` 脚手架阶段。
+当前处于 `Phase 1` backend-core 已完成阶段。
 
 已完成：
 
 - `build.gradle.kts` 和 `settings.gradle.kts`
 - `JchatApplication`
 - 最小健康检查接口 `GET /api/v1/health`
-- 基础 `application.yml`
-- 一个 `HealthControllerTest` 测试占位
+- `application.yml` + `application-dev.yml` + `application-prod.yml`
+- `AppProperties`、`WebClient`、`OpenAPI`、`Jackson`、`Async`、`Redis` 基础配置
+- 全局异常处理与统一错误响应
+- request id / MDC 注入
+- Flyway `V1__init_schema.sql`
+- `HealthControllerTest`、`GlobalExceptionHandlerTest`
 
 尚未完成：
 
-- Gradle wrapper
-- JDK 21 安装与本地启动验证
-- Flyway、JPA、Redis、OpenAPI 配置细化
 - auth / chat / conversation 等业务模块
+- JPA entity / repository 落地
+- Security、JWT、业务服务与控制器
 
 继续开发前，先看 [`docs/IMPLEMENTATION-STATUS.md`](../docs/IMPLEMENTATION-STATUS.md)。
 
@@ -41,13 +44,14 @@ Spring Boot 3.4 后端，jchat 项目的 Java 服务模块。
 ## 快速开始
 
 ```bash
-# 需要先安装 JDK 21
-# Phase 0 当前还未生成 Gradle wrapper
-# 后续补齐 wrapper 后可执行：
-# ./gradlew bootRun
+source ../scripts/use-jchat-env.sh
+gradle test
+gradle bootRun --args='--spring.profiles.active=dev'
 ```
 
 前置：PostgreSQL 和 Redis 已起（项目根 `docker compose up -d postgres redis`）。
+
+如果已经把 `jchat` 本地工具链写入 `~/.bashrc`，重新打开 shell 后可直接执行 `gradle test` / `gradle bootRun`。
 
 ## 常用命令
 
@@ -87,7 +91,7 @@ src/main/java/com/jchat/
 `src/main/resources/db/migration/`：
 
 ```
-Phase 0 尚未创建迁移文件
+V1__init_schema.sql
 ```
 
 目标 schema 设计见 [`docs/DATA-MODEL.md`](../docs/DATA-MODEL.md)。

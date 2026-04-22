@@ -1,5 +1,5 @@
 COMPOSE ?= docker compose
-JAVA_ENV ?= test -f ./.local/use-local-java.sh && . ./.local/use-local-java.sh || true
+JAVA_ENV ?= test -f ./scripts/use-jchat-env.sh && . ./scripts/use-jchat-env.sh || true
 
 .PHONY: dev deps test test-backend test-frontend fmt lint clean
 
