@@ -7,7 +7,7 @@
 ## Current Stage
 
 - 当前目标：`Phase 0`
-- 当前状态：`基本完成`
+- 当前状态：`已完成`
 - 最后更新：`2026-04-22`
 
 ---
@@ -75,9 +75,9 @@
 
 ---
 
-## 当前阻塞点
+## 当前状态说明
 
-### Docker 镜像未就绪
+### Docker 依赖
 
 以下镜像在 `Phase 0` 验收时需要：
 
@@ -96,7 +96,7 @@
 - 该镜像不包含 `pgvector`
 - 已将 `infra/postgres/init.sql` 调整为不在 `Phase 0` 里创建 `vector` 扩展
 
-### 本机缺少 Java / Gradle
+### Java / Gradle 环境
 
 当前环境检查结果：
 
@@ -116,7 +116,7 @@
 
 - 已可在不安装系统级 Java/Gradle 的前提下运行 backend
 
-### 前端依赖尚未安装验证
+### 前端依赖验证
 
 这项已经完成。实际验证结果：
 
@@ -133,19 +133,19 @@ npm run build
 
 ---
 
-## Phase 0 剩余任务
+## Phase 0 备注
 
 - 视情况补充 `backend/README.md` 与 `frontend/README.md` 到与当前脚手架一致
 - 视情况验证前端 dev server 可打开
 
-严格来说，Phase 0 主验收项已经完成：
+Phase 0 主验收项已经完成：
 
 - `docker compose up -d postgres redis` 成功
 - 前端构建通过
 - 后端服务启动成功
 - `/api/v1/health` 返回 200 + `{"status":"UP"}`
 
-当前更合理的下一步是进入 `Phase 1`
+下一步直接进入 `Phase 1`
 
 ---
 
