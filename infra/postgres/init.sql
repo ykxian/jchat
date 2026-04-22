@@ -1,0 +1,2 @@
+-- Phase 0 uses the stock postgres:16 image, which does not include pgvector.
+-- Enable pgvector later when switching to a pgvector-capable Postgres image.
