@@ -6,8 +6,8 @@
 
 ## Current Stage
 
-- 当前目标：`Phase 4`
-- 当前状态：`已完成`
+- 当前目标：`Phase 6`
+- 当前状态：`待开始`
 - 最后更新：`2026-04-23`
 
 ---
@@ -209,10 +209,10 @@ Phase 0 主验收项已经完成：
 
 ## 下一步建议顺序
 
-1. 进入 `Phase 5`，实现 conversations CRUD
-2. 先完成会话创建、列表读取、消息列表读取
-3. 按 `userId` 做严格权限过滤
-4. 暂不提前接入 LLM 流式链路
+1. 进入 `Phase 6`，实现最小 chat 主链路
+2. 复用已完成的 conversations / messages 持久化能力
+3. 只接一个 OpenAI-compatible provider
+4. 暂不提前接入 tools、files、masks
 
 ---
 
@@ -374,6 +374,56 @@ Phase 0 主验收项已经完成：
 
 - 仅实现 auth frontend 闭环
 - 未进入 conversations CRUD、SSE、Dexie、TanStack Query
+
+---
+
+## Phase 5 已完成
+
+### conversations CRUD 后端
+
+- 已新增 [/backend/src/main/java/com/jchat/common/jpa/CursorPage.java](/home/ykx/jchat/backend/src/main/java/com/jchat/common/jpa/CursorPage.java)
+- 已新增 [/backend/src/main/java/com/jchat/common/jpa/InstantIdCursor.java](/home/ykx/jchat/backend/src/main/java/com/jchat/common/jpa/InstantIdCursor.java)
+- 已新增 [/backend/src/main/java/com/jchat/conversation/controller/ConversationController.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/controller/ConversationController.java)
+- 已新增 [/backend/src/main/java/com/jchat/conversation/dto/ConversationResponse.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/dto/ConversationResponse.java)
+- 已新增 [/backend/src/main/java/com/jchat/conversation/dto/CreateConversationRequest.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/dto/CreateConversationRequest.java)
+- 已新增 [/backend/src/main/java/com/jchat/conversation/dto/MessageResponse.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/dto/MessageResponse.java)
+- 已新增 [/backend/src/main/java/com/jchat/conversation/dto/UpdateConversationRequest.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/dto/UpdateConversationRequest.java)
+- 已新增 [/backend/src/main/java/com/jchat/conversation/entity/Conversation.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/entity/Conversation.java)
+- 已新增 [/backend/src/main/java/com/jchat/conversation/entity/Message.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/entity/Message.java)
+- 已新增 [/backend/src/main/java/com/jchat/conversation/entity/MessageRole.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/entity/MessageRole.java)
+- 已新增 [/backend/src/main/java/com/jchat/conversation/repository/ConversationRepository.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/repository/ConversationRepository.java)
+- 已新增 [/backend/src/main/java/com/jchat/conversation/repository/MessageRepository.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/repository/MessageRepository.java)
+- 已新增 [/backend/src/main/java/com/jchat/conversation/service/ConversationService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/service/ConversationService.java)
+- 已新增 [/backend/src/main/java/com/jchat/conversation/service/MessageService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/service/MessageService.java)
+- 已新增 [/backend/src/test/java/com/jchat/conversation/controller/ConversationControllerTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/conversation/controller/ConversationControllerTest.java)
+- 已新增 [/backend/src/test/java/com/jchat/conversation/service/ConversationServiceTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/conversation/service/ConversationServiceTest.java)
+- 已新增 [/backend/src/test/java/com/jchat/conversation/service/MessageServiceTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/conversation/service/MessageServiceTest.java)
+
+当前后端已具备：
+
+- `/api/v1/conversations` 列表 + 创建
+- `/api/v1/conversations/{id}` 详情 + 更新 + 软删除
+- `/api/v1/conversations/{id}/messages` 消息列表
+- conversations / messages 的 cursor 分页响应结构
+- 基于 `userId` 的严格资源权限过滤
+- conversation / message 的 JPA entity、repository、service、controller 主链
+- `messages.role` 已显式映射到 PostgreSQL `message_role` enum，避免后续写消息时出现类型转换问题
+
+### Phase 5 验证结果
+
+已完成验证：
+
+- `cd backend && ./gradlew test` 通过
+- `ConversationServiceTest` 覆盖创建、分页 cursor、跨用户访问拦截、更新、软删除
+- `MessageServiceTest` 覆盖消息列表与 conversation 权限校验
+- `ConversationControllerTest` 覆盖列表、创建、更新、删除、消息列表
+
+本阶段范围控制：
+
+- 仅实现 conversations / messages 的普通 CRUD 访问能力
+- 复用 `V1__init_schema.sql` 中已存在的 `conversations` / `messages` 表，本阶段未新增迁移
+- 按路线图收敛决策，`mask` 相关字段与能力继续延后到后续 phase
+- 未进入 `/chat/completions` SSE、LLM provider、message 写入链路
 
 ---
 
