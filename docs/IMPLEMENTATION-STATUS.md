@@ -6,9 +6,9 @@
 
 ## Current Stage
 
-- 当前目标：`Phase 1`
+- 当前目标：`Phase 2`
 - 当前状态：`已完成`
-- 最后更新：`2026-04-22`
+- 最后更新：`2026-04-23`
 
 ---
 
@@ -209,10 +209,53 @@ Phase 0 主验收项已经完成：
 
 ## 下一步建议顺序
 
-1. 进入 `Phase 2`，只做 frontend skeleton 的强化或验收补齐
-2. 或直接按路线图进入 `Phase 3`，实现 auth 后端主链
+1. 进入 `Phase 3`，实现 auth 后端主链
+2. 前端开始对接 `/auth/register`、`/auth/login`、`/auth/refresh`
 3. `auth/chat` 开工前先基于 `V1` schema 增加 JPA entity / repository
 4. 保持 `backend-core` 不承载业务逻辑，只做公共支撑
+
+---
+
+## Phase 2 已完成
+
+### frontend skeleton 收敛
+
+- 已新增 [/frontend/src/App.tsx](/home/ykx/jchat/frontend/src/App.tsx)
+- 已新增 [/frontend/src/components/layout/PublicLayout.tsx](/home/ykx/jchat/frontend/src/components/layout/PublicLayout.tsx)
+- 已更新 [/frontend/src/router.tsx](/home/ykx/jchat/frontend/src/router.tsx)
+- 已更新 [/frontend/src/components/layout/AppShell.tsx](/home/ykx/jchat/frontend/src/components/layout/AppShell.tsx)
+- 已更新 [/frontend/src/pages/LoginPage.tsx](/home/ykx/jchat/frontend/src/pages/LoginPage.tsx)
+- 已更新 [/frontend/src/pages/RegisterPage.tsx](/home/ykx/jchat/frontend/src/pages/RegisterPage.tsx)
+- 已更新 [/frontend/src/pages/ChatPage.tsx](/home/ykx/jchat/frontend/src/pages/ChatPage.tsx)
+- 已更新 [/frontend/src/pages/SettingsPage.tsx](/home/ykx/jchat/frontend/src/pages/SettingsPage.tsx)
+- 已更新 [/frontend/src/api/client.ts](/home/ykx/jchat/frontend/src/api/client.ts)
+- 已更新 [/frontend/src/styles/globals.css](/home/ykx/jchat/frontend/src/styles/globals.css)
+- 已更新 [/frontend/README.md](/home/ykx/jchat/frontend/README.md)
+
+当前前端已具备：
+
+- 公共路由层：`/login`、`/register`、`/chat`、`/chat/:conversationId`、`/settings`
+- `PublicLayout` 与 `AppShell` 两种布局骨架
+- 可继续承接 auth / conversations / settings 的页面占位结构
+- 统一 `api/client.ts`，支持 JSON body、query 参数、错误对象封装
+- `/api` 代理配置与响应式全局样式
+
+### Phase 2 验证结果
+
+已完成验证：
+
+- `cd frontend && npm run build` 通过
+- 以 `npm run dev -- --host 127.0.0.1` 启动 Vite dev server 成功
+- 本地 HTTP 检查确认 `/`、`/login`、`/register`、`/chat`、`/chat/42`、`/settings` 均返回 `200`
+- 前端页面可在 `/login`、`/register`、`/chat`、`/chat/42`、`/settings` 间切换
+- `/api` 代理配置保持可用
+- `src/api/client.ts` 可作为后续模块唯一 fetch 入口
+
+本阶段范围控制：
+
+- 仅完成 frontend skeleton 的强化和收敛
+- 未实现 Zustand / Query / Dexie
+- 未进入真实 auth、conversation、chat 业务逻辑
 
 ---
 

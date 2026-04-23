@@ -6,26 +6,27 @@ React SPA，jchat 项目的前端模块。
 
 ## 当前状态
 
-当前处于 `Phase 0` 脚手架阶段。
+当前已进入 `Phase 2` 前端骨架阶段。
 
 已完成：
 
 - `package.json`
 - `vite.config.ts`
 - TypeScript 配置
-- `src/main.tsx`
-- `src/router.tsx`
-- `AppShell`
-- `LoginPage`、`RegisterPage`、`ChatPage`、`SettingsPage` 占位页
-- 最小 `api/client.ts`
-- 基础全局样式
+- `src/main.tsx` + `src/App.tsx`
+- `src/router.tsx` 路由骨架，覆盖 `/login`、`/register`、`/chat`、`/chat/:conversationId`、`/settings`
+- `AppShell` + `PublicLayout` 两层布局骨架
+- `LoginPage`、`RegisterPage`、`ChatPage`、`SettingsPage` 强化占位页
+- `src/api/client.ts` 统一请求封装（JSON body / query / typed error）
+- 全局样式与响应式布局骨架
+- `/api` 代理配置
 
 尚未完成：
 
-- 依赖安装验证
 - Zustand / TanStack Query / Dexie
-- 真正的 auth 流程
+- 真正的 auth 逻辑与 token 刷新
 - 会话列表、消息流、SSE 解析
+- 业务表单、状态管理、接口联调
 
 继续开发前，先看 [`docs/IMPLEMENTATION-STATUS.md`](../docs/IMPLEMENTATION-STATUS.md)。
 
