@@ -1,3 +1,6 @@
+import { authStore } from "../stores/authStore";
+import type { AuthSession } from "./auth";
+
 const API_BASE = "/api/v1";
 
 type QueryValue = string | number | boolean | null | undefined;
@@ -11,9 +14,10 @@ export type ApiErrorPayload = {
 };
 
 export type ApiRequestOptions = Omit<RequestInit, "body"> & {
-  body?: BodyInit | Record<string, unknown> | null;
+  body?: BodyInit | object | null;
   query?: QueryParams;
   token?: string | null;
+  skipAuthRefresh?: boolean;
 };
 
 export class ApiError extends Error {
@@ -55,7 +59,7 @@ function buildUrl(path: string, query?: QueryParams) {
   return `${url.pathname}${url.search}`;
 }
 
-function isJsonBody(body: ApiRequestOptions["body"]): body is Record<string, unknown> {
+function isJsonBody(body: ApiRequestOptions["body"]): body is object {
   if (body === null || body === undefined) {
     return false;
   }
@@ -81,11 +85,86 @@ async function parseResponseBody(response: Response) {
   return response.text();
 }
 
+async function parseErrorPayload(response: Response) {
+  return (await parseResponseBody(response).catch(() => undefined)) as ApiErrorPayload | undefined;
+}
+
+let refreshPromise: Promise<AuthSession> | null = null;
+
+export async function refreshAccessToken() {
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  refreshPromise = (async () => {
+    const response = await fetch(buildUrl("/auth/refresh"), {
+      credentials: "include",
+      headers: {
+        Accept: "application/json"
+      },
+      method: "POST"
+    });
+
+    if (!response.ok) {
+      const payload = await parseErrorPayload(response.clone());
+      authStore.clearAuth();
+      throw new ApiError(response.status, payload ?? { code: "AUTH_REFRESH_INVALID" });
+    }
+
+    const session = (await parseResponseBody(response)) as AuthSession;
+    authStore.setAuth(session.user, session.accessToken);
+    return session;
+  })().finally(() => {
+    refreshPromise = null;
+  });
+
+  return refreshPromise;
+}
+
+async function performRequest(
+  requestPath: string,
+  init: RequestInit,
+  token: string | null,
+  allowRefresh: boolean
+) {
+  const headers = new Headers(init.headers);
+
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  const response = await fetch(requestPath, {
+    ...init,
+    credentials: "include",
+    headers
+  });
+
+  if (!allowRefresh || !token || response.status !== 401) {
+    return response;
+  }
+
+  const payload = await parseErrorPayload(response.clone());
+
+  if (payload?.code !== "AUTH_EXPIRED") {
+    return response;
+  }
+
+  const session = await refreshAccessToken();
+  return performRequest(requestPath, init, session.accessToken, false);
+}
+
 export async function apiRequest<T = unknown>(
   path: string,
   options: ApiRequestOptions = {}
 ): Promise<T> {
-  const { body, headers, query, token, ...init } = options;
+  const {
+    body,
+    headers,
+    query,
+    skipAuthRefresh = false,
+    token,
+    ...init
+  } = options;
   const requestHeaders = new Headers(headers);
 
   if (!requestHeaders.has("Accept")) {
@@ -101,21 +180,19 @@ export async function apiRequest<T = unknown>(
     requestBody = body as BodyInit | null | undefined;
   }
 
-  if (token) {
-    requestHeaders.set("Authorization", `Bearer ${token}`);
-  }
-
-  const response = await fetch(buildUrl(path, query), {
-    ...init,
-    body: requestBody,
-    credentials: "include",
-    headers: requestHeaders
-  });
+  const response = await performRequest(
+    buildUrl(path, query),
+    {
+      ...init,
+      body: requestBody,
+      headers: requestHeaders
+    },
+    token ?? authStore.getState().accessToken,
+    !skipAuthRefresh
+  );
 
   if (!response.ok) {
-    const payload = (await parseResponseBody(response).catch(() => undefined)) as
-      | ApiErrorPayload
-      | undefined;
+    const payload = await parseErrorPayload(response.clone());
     throw new ApiError(response.status, payload ?? {});
   }
 

@@ -1,4 +1,6 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
+import { AuthGuard } from "./components/auth/AuthGuard";
+import { PublicOnlyGuard } from "./components/auth/PublicOnlyGuard";
 import { AppShell } from "./components/layout/AppShell";
 import { PublicLayout } from "./components/layout/PublicLayout";
 import { ChatPage } from "./pages/ChatPage";
@@ -11,14 +13,22 @@ export const router = createBrowserRouter([
     path: "/",
     children: [
       {
-        element: <PublicLayout />,
+        element: (
+          <PublicOnlyGuard>
+            <PublicLayout />
+          </PublicOnlyGuard>
+        ),
         children: [
           { path: "login", element: <LoginPage /> },
           { path: "register", element: <RegisterPage /> }
         ]
       },
       {
-        element: <AppShell />,
+        element: (
+          <AuthGuard>
+            <AppShell />
+          </AuthGuard>
+        ),
         children: [
           { index: true, element: <Navigate to="/chat" replace /> },
           { path: "chat", element: <ChatPage /> },

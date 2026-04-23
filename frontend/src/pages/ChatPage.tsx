@@ -1,7 +1,9 @@
 import { Link, useParams } from "react-router-dom";
+import { useAuthStore } from "../stores/authStore";
 
 export function ChatPage() {
   const { conversationId } = useParams();
+  const user = useAuthStore((state) => state.user);
 
   return (
     <div className="panel-grid">
@@ -9,10 +11,9 @@ export function ChatPage() {
         <p className="eyebrow">Chat</p>
         <h2>{conversationId ? `Conversation ${conversationId}` : "Chat Workspace"}</h2>
         <p className="muted">
-          This route is ready for both <code>/chat</code> and{" "}
-          <code>/chat/:conversationId</code>. The next phase can wire
-          conversation loading, optimistic message drafts, and SSE streaming on
-          top of this frame.
+          Protected routing is now active. The workspace knows which user is
+          signed in, and the next phase can attach conversation loading and SSE
+          streaming on top of this authenticated shell.
         </p>
         <div className="button-row">
           <Link className="button button--primary" to="/chat/42">
@@ -25,11 +26,21 @@ export function ChatPage() {
       </section>
 
       <section className="panel">
+        <p className="eyebrow">Session</p>
+        <h3>Auth bootstrap is complete</h3>
+        <ul className="feature-list">
+          <li>{user?.displayName ?? "Unknown user"} is attached to the SPA state</li>
+          <li>Bearer token stays in memory only</li>
+          <li>Refresh cookie can restore the workspace after reload</li>
+        </ul>
+      </section>
+
+      <section className="panel">
         <p className="eyebrow">Message Composer</p>
         <h3>Reserved for the streaming workflow</h3>
         <p className="muted">
-          The UI is intentionally static here. Phase 3 can add auth first, then
-          Phase 4 can attach message send, abort, and stream state.
+          The UI is intentionally static here. Phase 5 can attach conversation
+          data, then Phase 6 can add message send, abort, and stream state.
         </p>
         <div className="placeholder-box">
           <span>Draft user message input</span>

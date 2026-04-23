@@ -12,23 +12,23 @@ export function PublicLayout() {
         <Link className="brand-mark" to="/chat">
           jchat
         </Link>
-        <p className="eyebrow">Phase 2</p>
-        <h1>Frontend skeleton for auth and chat.</h1>
+        <p className="eyebrow">Phase 4</p>
+        <h1>Auth routes are now connected to the backend.</h1>
         <p className="lede">
-          This stage keeps the app intentionally static while fixing the route
-          structure, layout contracts, and API boundary that Phase 3 will build
-          on.
+          Access tokens stay in memory, refresh happens through HttpOnly
+          cookies, and route guards restore the session before rendering the
+          protected workspace.
         </p>
         <div className="status-list">
-          <span>React Router shell</span>
-          <span>Placeholder auth flows</span>
-          <span>Typed API client</span>
+          <span>Register and login</span>
+          <span>401 automatic refresh</span>
+          <span>Protected route restore</span>
         </div>
       </section>
 
       <section className="public-content-panel">
         <header className="public-topbar">
-          <nav className="inline-nav" aria-label="Auth routes">
+          <nav aria-label="Auth routes" className="inline-nav">
             {authLinks.map((link) => (
               <NavLink
                 key={link.to}

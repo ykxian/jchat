@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.ColumnTransformer;
 
 @Entity
 @Table(name = "refresh_tokens")
@@ -33,6 +34,7 @@ public class RefreshToken {
     private String userAgent;
 
     @Column(name = "ip", columnDefinition = "inet")
+    @ColumnTransformer(write = "?::inet")
     private String ip;
 
     @CreationTimestamp

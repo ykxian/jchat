@@ -97,6 +97,20 @@ code {
   gap: 10px;
 }
 
+.shell-account {
+  display: grid;
+  gap: 4px;
+}
+
+.shell-account strong {
+  font-size: 1.05rem;
+}
+
+.shell-account span {
+  color: rgba(247, 242, 234, 0.68);
+  word-break: break-word;
+}
+
 .shell-nav,
 .inline-nav {
   display: flex;
@@ -155,6 +169,10 @@ code {
   padding: 24px;
 }
 
+.auth-card--compact {
+  max-width: 420px;
+}
+
 .shell-main,
 .public-content-panel {
   padding: 28px;
@@ -178,6 +196,13 @@ code {
 .public-main {
   display: grid;
   align-content: start;
+}
+
+.gate-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
 }
 
 .public-shell {
@@ -253,6 +278,23 @@ code {
   margin: 22px 0 26px;
 }
 
+.auth-feedback {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(247, 242, 234, 0.14);
+}
+
+.auth-feedback--success {
+  background: rgba(94, 150, 106, 0.16);
+  border-color: rgba(94, 150, 106, 0.4);
+}
+
+.auth-feedback--error {
+  background: rgba(174, 74, 60, 0.16);
+  border-color: rgba(220, 112, 96, 0.45);
+}
+
 .field {
   display: grid;
   gap: 8px;
@@ -290,6 +332,12 @@ code {
   transform: translateY(-1px);
 }
 
+.button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+  transform: none;
+}
+
 .button--primary {
   background: linear-gradient(135deg, rgba(214, 130, 75, 0.95), rgba(189, 95, 46, 0.95));
   color: #fff7ef;
@@ -320,50 +368,32 @@ code {
   margin-top: 8px;
 }
 
-.eyebrow {
-  margin: 0;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  font-size: 0.74rem;
-  color: #f1b47f;
+.profile-list {
+  display: grid;
+  gap: 16px;
+  margin: 18px 0 0;
 }
 
-.lede,
-.muted,
-p {
-  margin: 0;
-  color: rgba(247, 242, 234, 0.74);
+.profile-list div {
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(247, 242, 234, 0.1);
+  background: rgba(247, 242, 234, 0.04);
 }
 
-h1,
-h2,
-h3 {
-  margin: 0;
-  font-weight: 600;
-  line-height: 1.15;
+.profile-list dt {
+  color: rgba(247, 242, 234, 0.6);
+  font-size: 0.88rem;
 }
 
-h1 {
-  font-size: clamp(2.25rem, 4vw, 4.3rem);
+.profile-list dd {
+  margin: 6px 0 0;
+  font-size: 1rem;
 }
 
-h2 {
-  font-size: clamp(1.7rem, 2vw, 2.35rem);
-  margin-top: 10px;
-}
-
-h3 {
-  font-size: 1.15rem;
-  margin-top: 10px;
-}
-
-.auth-card {
-  max-width: 520px;
-}
-
-@media (max-width: 1080px) {
-  .public-shell,
-  .shell {
+@media (max-width: 980px) {
+  .shell,
+  .public-shell {
     grid-template-columns: 1fr;
   }
 

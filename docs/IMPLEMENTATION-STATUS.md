@@ -6,7 +6,7 @@
 
 ## Current Stage
 
-- 当前目标：`Phase 3`
+- 当前目标：`Phase 4`
 - 当前状态：`已完成`
 - 最后更新：`2026-04-23`
 
@@ -209,10 +209,10 @@ Phase 0 主验收项已经完成：
 
 ## 下一步建议顺序
 
-1. 进入 `Phase 4`，实现 auth 前端联通
-2. 补 `authStore`、`AuthGuard` 和 `api/client.ts` 的 401 自动 refresh 重放
-3. 联调 `/auth/register`、`/auth/login`、`/auth/refresh`、`/auth/logout`、`/auth/me`
-4. 保持范围收敛，暂不扩展到 `PATCH /auth/me`、改密、会话业务
+1. 进入 `Phase 5`，实现 conversations CRUD
+2. 先完成会话创建、列表读取、消息列表读取
+3. 按 `userId` 做严格权限过滤
+4. 暂不提前接入 LLM 流式链路
 
 ---
 
@@ -327,6 +327,53 @@ Phase 0 主验收项已经完成：
 - 未实现 `POST /auth/change-password`
 - 未实现注册 / 登录限流
 - 未进入 auth 前端联通
+
+---
+
+## Phase 4 已完成
+
+### auth frontend 联通
+
+- 已新增 [/frontend/src/stores/authStore.ts](/home/ykx/jchat/frontend/src/stores/authStore.ts)
+- 已新增 [/frontend/src/api/auth.ts](/home/ykx/jchat/frontend/src/api/auth.ts)
+- 已新增 [/frontend/src/auth/session.ts](/home/ykx/jchat/frontend/src/auth/session.ts)
+- 已新增 [/frontend/src/components/auth/AuthGuard.tsx](/home/ykx/jchat/frontend/src/components/auth/AuthGuard.tsx)
+- 已新增 [/frontend/src/components/auth/PublicOnlyGuard.tsx](/home/ykx/jchat/frontend/src/components/auth/PublicOnlyGuard.tsx)
+- 已新增 [/frontend/src/components/auth/SessionGateFallback.tsx](/home/ykx/jchat/frontend/src/components/auth/SessionGateFallback.tsx)
+- 已更新 [/frontend/src/api/client.ts](/home/ykx/jchat/frontend/src/api/client.ts)
+- 已更新 [/frontend/src/router.tsx](/home/ykx/jchat/frontend/src/router.tsx)
+- 已更新 [/frontend/src/pages/LoginPage.tsx](/home/ykx/jchat/frontend/src/pages/LoginPage.tsx)
+- 已更新 [/frontend/src/pages/RegisterPage.tsx](/home/ykx/jchat/frontend/src/pages/RegisterPage.tsx)
+- 已更新 [/frontend/src/components/layout/AppShell.tsx](/home/ykx/jchat/frontend/src/components/layout/AppShell.tsx)
+- 已更新 [/frontend/src/components/layout/PublicLayout.tsx](/home/ykx/jchat/frontend/src/components/layout/PublicLayout.tsx)
+- 已更新 [/frontend/src/pages/ChatPage.tsx](/home/ykx/jchat/frontend/src/pages/ChatPage.tsx)
+- 已更新 [/frontend/src/pages/SettingsPage.tsx](/home/ykx/jchat/frontend/src/pages/SettingsPage.tsx)
+- 已更新 [/frontend/src/styles/globals.css](/home/ykx/jchat/frontend/src/styles/globals.css)
+- 已更新 [/frontend/README.md](/home/ykx/jchat/frontend/README.md)
+
+当前前端已具备：
+
+- `authStore` 内存态 access token 与当前用户状态
+- `AuthGuard` / `PublicOnlyGuard` 路由守卫
+- `/auth/register`、`/auth/login`、`/auth/refresh`、`/auth/logout`、`/auth/me` 的前端联调入口
+- `api/client.ts` 的 401 `AUTH_EXPIRED` 自动 refresh + 原请求重放
+- 刷新页面后通过 refresh cookie 恢复登录态
+- 退出登录后清理前端状态并回到 `/login`
+
+### Phase 4 验证结果
+
+已完成验证：
+
+- `cd frontend && npm run typecheck` 通过
+- `cd frontend && npm run build` 通过
+- `cd backend && source ../scripts/use-jchat-env.sh && ./gradlew test` 通过
+- 真实浏览器手动验收通过：`/chat` 未登录拦截、注册、登录、`/settings` 用户信息展示、页面刷新保持登录、退出后回到 `/login`
+- 已修复后端登录时的 `refresh_tokens.ip` 写入问题：`inet` 列与 Hibernate 参数类型不匹配，现通过 [RefreshToken.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/entity/RefreshToken.java) 的 `@ColumnTransformer(write = \"?::inet\")` 显式转换
+
+本阶段范围控制：
+
+- 仅实现 auth frontend 闭环
+- 未进入 conversations CRUD、SSE、Dexie、TanStack Query
 
 ---
 
