@@ -3,6 +3,13 @@ spring:
     activate:
       on-profile: prod
 
+app:
+  auth:
+    jwt-secret: ${JWT_SECRET}
+    refresh-cookie-name: __Host-refresh
+    refresh-cookie-secure: true
+    refresh-cookie-same-site: Strict
+
 springdoc:
   api-docs:
     enabled: false

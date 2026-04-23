@@ -12,6 +12,7 @@ public class AppProperties {
     private String name = "jchat";
     private String description = "多用户 AI 对话应用（仿 NextChat）";
     private final Cors cors = new Cors();
+    private final Auth auth = new Auth();
     private final Llm llm = new Llm();
 
     public String getName() {
@@ -34,6 +35,10 @@ public class AppProperties {
         return cors;
     }
 
+    public Auth getAuth() {
+        return auth;
+    }
+
     public Llm getLlm() {
         return llm;
     }
@@ -48,6 +53,65 @@ public class AppProperties {
 
         public void setAllowedOrigins(List<String> allowedOrigins) {
             this.allowedOrigins = new ArrayList<>(allowedOrigins);
+        }
+    }
+
+    public static class Auth {
+
+        private String jwtSecret =
+                "MWYzMjU0NzY5OGFiY2RlZjAxMjM0NTY3ODlhYmNkZWYxZjMyNTQ3Njk4YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZg==";
+        private Duration accessTokenTtl = Duration.ofMinutes(15);
+        private Duration refreshTokenTtl = Duration.ofDays(7);
+        private String refreshCookieName = "refresh";
+        private boolean refreshCookieSecure;
+        private String refreshCookieSameSite = "Lax";
+
+        public String getJwtSecret() {
+            return jwtSecret;
+        }
+
+        public void setJwtSecret(String jwtSecret) {
+            this.jwtSecret = jwtSecret;
+        }
+
+        public Duration getAccessTokenTtl() {
+            return accessTokenTtl;
+        }
+
+        public void setAccessTokenTtl(Duration accessTokenTtl) {
+            this.accessTokenTtl = accessTokenTtl;
+        }
+
+        public Duration getRefreshTokenTtl() {
+            return refreshTokenTtl;
+        }
+
+        public void setRefreshTokenTtl(Duration refreshTokenTtl) {
+            this.refreshTokenTtl = refreshTokenTtl;
+        }
+
+        public String getRefreshCookieName() {
+            return refreshCookieName;
+        }
+
+        public void setRefreshCookieName(String refreshCookieName) {
+            this.refreshCookieName = refreshCookieName;
+        }
+
+        public boolean isRefreshCookieSecure() {
+            return refreshCookieSecure;
+        }
+
+        public void setRefreshCookieSecure(boolean refreshCookieSecure) {
+            this.refreshCookieSecure = refreshCookieSecure;
+        }
+
+        public String getRefreshCookieSameSite() {
+            return refreshCookieSameSite;
+        }
+
+        public void setRefreshCookieSameSite(String refreshCookieSameSite) {
+            this.refreshCookieSameSite = refreshCookieSameSite;
         }
     }
 

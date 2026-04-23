@@ -53,6 +53,13 @@ app:
   cors:
     allowed-origins:
       - ${FRONTEND_ORIGIN:http://localhost:5173}
+  auth:
+    jwt-secret: ${JWT_SECRET:MWYzMjU0NzY5OGFiY2RlZjAxMjM0NTY3ODlhYmNkZWYxZjMyNTQ3Njk4YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZg==}
+    access-token-ttl: ${AUTH_ACCESS_TOKEN_TTL:15m}
+    refresh-token-ttl: ${AUTH_REFRESH_TOKEN_TTL:7d}
+    refresh-cookie-name: ${AUTH_REFRESH_COOKIE_NAME:refresh}
+    refresh-cookie-secure: ${AUTH_REFRESH_COOKIE_SECURE:false}
+    refresh-cookie-same-site: ${AUTH_REFRESH_COOKIE_SAME_SITE:Lax}
   llm:
     max-connections: 200
     pending-acquire-timeout: 10s

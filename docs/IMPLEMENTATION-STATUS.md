@@ -6,7 +6,7 @@
 
 ## Current Stage
 
-- 当前目标：`Phase 2`
+- 当前目标：`Phase 3`
 - 当前状态：`已完成`
 - 最后更新：`2026-04-23`
 
@@ -209,10 +209,10 @@ Phase 0 主验收项已经完成：
 
 ## 下一步建议顺序
 
-1. 进入 `Phase 3`，实现 auth 后端主链
-2. 前端开始对接 `/auth/register`、`/auth/login`、`/auth/refresh`
-3. `auth/chat` 开工前先基于 `V1` schema 增加 JPA entity / repository
-4. 保持 `backend-core` 不承载业务逻辑，只做公共支撑
+1. 进入 `Phase 4`，实现 auth 前端联通
+2. 补 `authStore`、`AuthGuard` 和 `api/client.ts` 的 401 自动 refresh 重放
+3. 联调 `/auth/register`、`/auth/login`、`/auth/refresh`、`/auth/logout`、`/auth/me`
+4. 保持范围收敛，暂不扩展到 `PATCH /auth/me`、改密、会话业务
 
 ---
 
@@ -256,6 +256,77 @@ Phase 0 主验收项已经完成：
 - 仅完成 frontend skeleton 的强化和收敛
 - 未实现 Zustand / Query / Dexie
 - 未进入真实 auth、conversation、chat 业务逻辑
+
+---
+
+## Phase 3 已完成
+
+### auth backend 主链
+
+- 已新增 [/backend/src/main/java/com/jchat/auth/controller/AuthController.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/controller/AuthController.java)
+- 已新增 [/backend/src/main/java/com/jchat/auth/controller/UserController.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/controller/UserController.java)
+- 已新增 [/backend/src/main/java/com/jchat/auth/dto/LoginRequest.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/dto/LoginRequest.java)
+- 已新增 [/backend/src/main/java/com/jchat/auth/dto/LoginResponse.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/dto/LoginResponse.java)
+- 已新增 [/backend/src/main/java/com/jchat/auth/dto/RegisterRequest.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/dto/RegisterRequest.java)
+- 已新增 [/backend/src/main/java/com/jchat/auth/dto/UserResponse.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/dto/UserResponse.java)
+- 已新增 [/backend/src/main/java/com/jchat/auth/entity/RefreshToken.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/entity/RefreshToken.java)
+- 已新增 [/backend/src/main/java/com/jchat/auth/entity/User.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/entity/User.java)
+- 已新增 [/backend/src/main/java/com/jchat/auth/jwt/JwtAuthenticationFilter.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/jwt/JwtAuthenticationFilter.java)
+- 已新增 [/backend/src/main/java/com/jchat/auth/jwt/JwtPrincipal.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/jwt/JwtPrincipal.java)
+- 已新增 [/backend/src/main/java/com/jchat/auth/jwt/JwtService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/jwt/JwtService.java)
+- 已新增 [/backend/src/main/java/com/jchat/auth/repository/RefreshTokenRepository.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/repository/RefreshTokenRepository.java)
+- 已新增 [/backend/src/main/java/com/jchat/auth/repository/UserRepository.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/repository/UserRepository.java)
+- 已新增 [/backend/src/main/java/com/jchat/auth/security/CookieUtils.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/security/CookieUtils.java)
+- 已新增 [/backend/src/main/java/com/jchat/auth/security/JsonAccessDeniedHandler.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/security/JsonAccessDeniedHandler.java)
+- 已新增 [/backend/src/main/java/com/jchat/auth/security/JsonAuthenticationEntryPoint.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/security/JsonAuthenticationEntryPoint.java)
+- 已新增 [/backend/src/main/java/com/jchat/auth/security/PasswordEncoderConfig.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/security/PasswordEncoderConfig.java)
+- 已新增 [/backend/src/main/java/com/jchat/auth/security/SecurityConfig.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/security/SecurityConfig.java)
+- 已新增 [/backend/src/main/java/com/jchat/auth/service/AuthService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/service/AuthService.java)
+- 已新增 [/backend/src/main/java/com/jchat/auth/service/LoginResult.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/service/LoginResult.java)
+- 已新增 [/backend/src/main/java/com/jchat/auth/service/UserService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/service/UserService.java)
+- 已新增 [/backend/src/test/java/com/jchat/auth/controller/AuthControllerTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/auth/controller/AuthControllerTest.java)
+- 已新增 [/backend/src/test/java/com/jchat/auth/controller/UserControllerTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/auth/controller/UserControllerTest.java)
+- 已新增 [/backend/src/test/java/com/jchat/auth/jwt/JwtAuthenticationFilterTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/auth/jwt/JwtAuthenticationFilterTest.java)
+- 已新增 [/backend/src/test/java/com/jchat/auth/jwt/JwtServiceTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/auth/jwt/JwtServiceTest.java)
+- 已新增 [/backend/src/test/java/com/jchat/auth/security/PasswordEncoderConfigTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/auth/security/PasswordEncoderConfigTest.java)
+- 已新增 [/backend/src/test/java/com/jchat/auth/service/AuthServiceTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/auth/service/AuthServiceTest.java)
+- 已更新 [/backend/build.gradle.kts](/home/ykx/jchat/backend/build.gradle.kts)
+- 已更新 [/backend/src/main/java/com/jchat/JchatApplication.java](/home/ykx/jchat/backend/src/main/java/com/jchat/JchatApplication.java)
+- 已更新 [/backend/src/main/java/com/jchat/config/AppProperties.java](/home/ykx/jchat/backend/src/main/java/com/jchat/config/AppProperties.java)
+- 已更新 [/backend/src/main/resources/application.yml](/home/ykx/jchat/backend/src/main/resources/application.yml)
+- 已更新 [/backend/src/main/resources/application-prod.yml](/home/ykx/jchat/backend/src/main/resources/application-prod.yml)
+- 已更新 [/backend/src/test/java/com/jchat/health/HealthControllerTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/health/HealthControllerTest.java)
+
+当前后端已具备：
+
+- `/api/v1/auth/register` 注册
+- `/api/v1/auth/login` 登录 + access token 返回
+- `/api/v1/auth/refresh` refresh cookie 轮换
+- `/api/v1/auth/logout` 吊销当前 refresh token + 清 cookie
+- `/api/v1/auth/me` 获取当前用户
+- `JWT + Spring Security` 鉴权链
+- dev/prod 差异化 refresh cookie 配置
+- `User` / `RefreshToken` 的 JPA entity 与 repository
+- 核心单元测试与 controller/filter 测试
+
+### Phase 3 验证结果
+
+已完成验证：
+
+- `cd backend && source ../scripts/use-jchat-env.sh && gradle --no-daemon test` 通过
+- `JwtServiceTest` 覆盖 access token 签发、错误签名、过期 token
+- `AuthServiceTest` 覆盖注册密码校验、密码哈希链路、登录失败、refresh rotate / reuse
+- `AuthControllerTest` 覆盖 register / login / refresh 缺 cookie / logout cookie 清理
+- `UserControllerTest` 覆盖 `/auth/me`
+- `JwtAuthenticationFilterTest` 覆盖 bearer token 解析成功与失败分支
+
+本阶段范围控制：
+
+- 已实现 Phase 3 主链：register / login / refresh / logout / `GET /auth/me`
+- 未实现 `PATCH /auth/me`
+- 未实现 `POST /auth/change-password`
+- 未实现注册 / 登录限流
+- 未进入 auth 前端联通
 
 ---
 
