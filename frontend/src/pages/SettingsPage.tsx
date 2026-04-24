@@ -12,6 +12,7 @@ export function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
   const [form, setForm] = useState({
+    baseUrl: "",
     key: "",
     label: "",
     provider: "openai"
@@ -73,12 +74,14 @@ export function SettingsPage() {
 
     try {
       await apiKeysApi.create({
+        baseUrl: form.baseUrl.trim() || null,
         key: form.key.trim(),
         label: form.label.trim(),
         provider: form.provider
       });
       await refreshData();
       setForm({
+        baseUrl: "",
         key: "",
         label: "",
         provider: form.provider
@@ -200,6 +203,19 @@ export function SettingsPage() {
             />
           </label>
           <label className="settings-field">
+            <span>Base URL</span>
+            <input
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  baseUrl: event.target.value
+                }))
+              }
+              placeholder="Optional custom endpoint, e.g. https://proxy.example.com/v1"
+              value={form.baseUrl}
+            />
+          </label>
+          <label className="settings-field">
             <span>API key</span>
             <input
               onChange={(event) =>
@@ -230,6 +246,7 @@ export function SettingsPage() {
                 <span>
                   {apiKey.provider} · ••••{apiKey.last4}
                 </span>
+                {apiKey.baseUrl ? <span>{apiKey.baseUrl}</span> : null}
               </div>
               <button
                 className="button button--ghost"

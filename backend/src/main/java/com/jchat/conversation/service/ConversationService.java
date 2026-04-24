@@ -11,6 +11,7 @@ import com.jchat.conversation.entity.Conversation;
 import com.jchat.conversation.repository.ConversationRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,8 @@ import org.springframework.util.StringUtils;
 @Service
 @Transactional
 public class ConversationService {
+
+    private static final Set<String> ALLOWED_REASONING_EFFORTS = Set.of("low", "medium", "high");
 
     private final ConversationRepository conversationRepository;
 
@@ -33,6 +36,7 @@ public class ConversationService {
         conversation.setProvider(normalizeRequiredText(request.provider()));
         conversation.setModel(normalizeRequiredText(request.model()));
         conversation.setSystemPrompt(normalizeNullableText(request.systemPrompt()));
+        conversation.setReasoningEffort(normalizeReasoningEffort(request.reasoningEffort()));
         return ConversationResponse.from(conversationRepository.save(conversation));
     }
 
@@ -91,6 +95,9 @@ public class ConversationService {
         if (request.model() != null) {
             conversation.setModel(normalizeRequiredText(request.model()));
         }
+        if (request.reasoningEffort() != null) {
+            conversation.setReasoningEffort(normalizeReasoningEffort(request.reasoningEffort()));
+        }
 
         return ConversationResponse.from(conversationRepository.save(conversation));
     }
@@ -130,5 +137,19 @@ public class ConversationService {
             return null;
         }
         return value.trim();
+    }
+
+    private String normalizeReasoningEffort(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        String normalized = value.trim().toLowerCase();
+        if (!ALLOWED_REASONING_EFFORTS.contains(normalized)) {
+            throw new ApiException(
+                    ErrorCode.VALIDATION_FAILED,
+                    "reasoningEffort must be one of: low, medium, high"
+            );
+        }
+        return normalized;
     }
 }

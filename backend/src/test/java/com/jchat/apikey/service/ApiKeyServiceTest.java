@@ -51,7 +51,7 @@ class ApiKeyServiceTest {
 
         ApiKeyResponse response = apiKeyService.create(
                 7L,
-                new CreateApiKeyRequest(" openai ", " Personal key ", "sk-secret-1234")
+                new CreateApiKeyRequest(" openai ", " Personal key ", " https://api.example.com/v1/ ", "sk-secret-1234")
         );
 
         verify(userApiKeyRepository).save(apiKeyCaptor.capture());
@@ -59,12 +59,14 @@ class ApiKeyServiceTest {
         assertEquals(7L, saved.getUserId());
         assertEquals("openai", saved.getProvider());
         assertEquals("Personal key", saved.getLabel());
+        assertEquals("https://api.example.com/v1", saved.getBaseUrl());
         assertEquals("1234", saved.getLast4());
         assertEquals("3", response.id());
+        assertEquals("https://api.example.com/v1", response.baseUrl());
     }
 
     @Test
-    void resolveDecryptedKeyRejectsMismatchedProvider() {
+    void resolveForChatRejectsMismatchedProvider() {
         UserApiKey apiKey = new UserApiKey();
         apiKey.setId(9L);
         apiKey.setUserId(7L);
@@ -74,9 +76,30 @@ class ApiKeyServiceTest {
         when(userApiKeyRepository.findByIdAndUserIdAndDeletedAtIsNull(9L, 7L)).thenReturn(Optional.of(apiKey));
 
         ApiException exception = assertThrows(ApiException.class, () ->
-                apiKeyService.resolveDecryptedKey(7L, "openai", 9L)
+                apiKeyService.resolveForChat(7L, "openai", 9L)
         );
 
         assertEquals(ErrorCode.VALIDATION_FAILED, exception.getErrorCode());
+    }
+
+    @Test
+    void resolveForChatReturnsKeyAndBaseUrl() {
+        ApiKeyCipher cipher = new ApiKeyCipher(new AppProperties());
+        cipher.initialize();
+        apiKeyService = new ApiKeyService(userApiKeyRepository, cipher);
+
+        UserApiKey apiKey = new UserApiKey();
+        apiKey.setId(9L);
+        apiKey.setUserId(7L);
+        apiKey.setProvider("openai");
+        apiKey.setBaseUrl("https://proxy.example.com/v1");
+        apiKey.setEncryptedKey(cipher.encrypt("sk-secret"));
+
+        when(userApiKeyRepository.findByIdAndUserIdAndDeletedAtIsNull(9L, 7L)).thenReturn(Optional.of(apiKey));
+
+        ApiKeyService.ResolvedApiKey resolved = apiKeyService.resolveForChat(7L, "openai", 9L);
+
+        assertEquals("sk-secret", resolved.apiKey());
+        assertEquals("https://proxy.example.com/v1", resolved.baseUrl());
     }
 }

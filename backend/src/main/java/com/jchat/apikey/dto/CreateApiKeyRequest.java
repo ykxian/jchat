@@ -10,6 +10,8 @@ public record CreateApiKeyRequest(
         @NotBlank(message = "label is required")
         @Size(max = 100, message = "label must be at most 100 characters")
         String label,
+        @Size(max = 2000, message = "baseUrl must be at most 2000 characters")
+        String baseUrl,
         @NotBlank(message = "key is required")
         String key
 ) {

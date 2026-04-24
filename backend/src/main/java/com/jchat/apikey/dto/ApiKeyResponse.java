@@ -6,6 +6,7 @@ public record ApiKeyResponse(
         String id,
         String provider,
         String label,
+        String baseUrl,
         String last4,
         String createdAt
 ) {
@@ -15,6 +16,7 @@ public record ApiKeyResponse(
                 String.valueOf(apiKey.getId()),
                 apiKey.getProvider(),
                 apiKey.getLabel(),
+                apiKey.getBaseUrl(),
                 apiKey.getLast4(),
                 apiKey.getCreatedAt() == null ? null : apiKey.getCreatedAt().toString()
         );

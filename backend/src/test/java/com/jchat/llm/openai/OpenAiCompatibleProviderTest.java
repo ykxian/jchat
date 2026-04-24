@@ -3,6 +3,8 @@ package com.jchat.llm.openai;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jchat.config.AppProperties;
 import com.jchat.llm.dto.ChatChunk;
+import com.jchat.llm.dto.ChatMessage;
+import com.jchat.llm.dto.ChatRequest;
 import com.jchat.llm.dto.FinishReason;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,5 +43,19 @@ class OpenAiCompatibleProviderTest {
     @Test
     void parseEventDataIgnoresDoneMarker() {
         assertTrue(provider.parseEventData("[DONE]").isEmpty());
+    }
+
+    @Test
+    void openAiRequestCarriesReasoningEffort() {
+        OpenAiRequest request = OpenAiRequest.from(new ChatRequest(
+                "gpt-4o",
+                List.of(ChatMessage.user("hello")),
+                0.7,
+                1.0,
+                256,
+                "high"
+        ));
+
+        assertEquals("high", request.reasoningEffort());
     }
 }

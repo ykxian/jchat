@@ -31,6 +31,9 @@ public class UserApiKey {
     @Column(name = "encrypted_key", nullable = false, columnDefinition = "text")
     private String encryptedKey;
 
+    @Column(name = "base_url", columnDefinition = "text")
+    private String baseUrl;
+
     @Column(nullable = false, length = 8)
     private String last4;
 
@@ -83,6 +86,14 @@ public class UserApiKey {
 
     public String getLast4() {
         return last4;
+    }
+
+    public String getBaseUrl() {
+        return baseUrl;
+    }
+
+    public void setBaseUrl(String baseUrl) {
+        this.baseUrl = baseUrl;
     }
 
     public void setLast4(String last4) {

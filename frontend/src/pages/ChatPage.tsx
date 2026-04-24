@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { apiKeysApi } from "../api/apiKeys";
 import { streamChatCompletion } from "../api/chat";
 import { conversationsApi } from "../api/conversations";
 import { providersApi } from "../api/providers";
-import type { Conversation, Message, ProviderInfo } from "../api/types";
+import type { ApiKeyRecord, Conversation, Message, ProviderInfo } from "../api/types";
 import { Composer } from "../components/chat/Composer";
 import { MessageList } from "../components/chat/MessageList";
 import { StreamingMessage } from "../components/chat/StreamingMessage";
@@ -15,6 +16,12 @@ import { streamStore, useStreamStore } from "../stores/streamStore";
 
 const DEFAULT_PROVIDER = "openai";
 const DEFAULT_MODEL = "gpt-4o-mini";
+const REASONING_EFFORT_OPTIONS = [
+  { label: "Default", value: "" },
+  { label: "Low", value: "low" },
+  { label: "Medium", value: "medium" },
+  { label: "High", value: "high" }
+] as const;
 
 function buildDraftMessage(content: string): Message {
   return {
@@ -68,8 +75,10 @@ export function ChatPage() {
     typeof navigator === "undefined" ? true : navigator.onLine
   );
   const [pageError, setPageError] = useState<string | null>(null);
+  const [apiKeys, setApiKeys] = useState<ApiKeyRecord[]>([]);
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
   const [selectedApiKeyId, setSelectedApiKeyId] = useState<string>("");
+  const [modelDraft, setModelDraft] = useState("");
   const conversations = useConversationStore((state) => state.items);
   const currentId = useConversationStore((state) => state.currentId);
   const messagesByConversation = useConversationStore((state) => state.messagesByConversation);
@@ -84,6 +93,9 @@ export function ChatPage() {
   const isStreamingCurrent = stream?.conversationId === currentId && stream.isStreaming;
   const currentProviderInfo =
     providers.find((provider) => provider.name === currentConversation?.provider) ?? null;
+  const selectedApiKey =
+    apiKeys.find((apiKey) => apiKey.id === selectedApiKeyId && apiKey.provider === currentConversation?.provider) ??
+    null;
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -112,9 +124,13 @@ export function ChatPage() {
 
     async function loadProviders() {
       try {
-        const response = await providersApi.list();
+        const [providerResponse, apiKeyResponse] = await Promise.all([
+          providersApi.list(),
+          apiKeysApi.list()
+        ]);
         if (!cancelled) {
-          setProviders(response.items);
+          setProviders(providerResponse.items);
+          setApiKeys(apiKeyResponse.items);
         }
       } catch (error) {
         if (!cancelled) {
@@ -256,6 +272,10 @@ export function ChatPage() {
     );
   }, [currentProviderInfo]);
 
+  useEffect(() => {
+    setModelDraft(currentConversation?.model ?? "");
+  }, [currentConversation?.id, currentConversation?.model]);
+
   async function handleCreateConversation() {
     if (isCreatingConversation || !isOnline || !userId) {
       return;
@@ -347,6 +367,7 @@ export function ChatPage() {
           messages: [{ content, role: "user" }],
           model: currentConversation?.model ?? DEFAULT_MODEL,
           provider: currentConversation?.provider ?? DEFAULT_PROVIDER,
+          reasoningEffort: currentConversation?.reasoningEffort ?? null,
           temperature: 0.7,
           topP: 1
         },
@@ -408,6 +429,7 @@ export function ChatPage() {
   async function handleUpdateConversationSelection(patch: {
     provider?: string;
     model?: string;
+    reasoningEffort?: "low" | "medium" | "high" | null;
   }) {
     if (!currentConversation || isStreamingCurrent) {
       return;
@@ -487,18 +509,52 @@ export function ChatPage() {
 
                 <label className="toolbar-field">
                   <span>Model</span>
-                  <select
+                  <input
                     disabled={Boolean(isStreamingCurrent)}
-                    onChange={(event) =>
+                    list={`provider-models-${currentConversation.id}`}
+                    onBlur={() => {
+                      const nextModel = modelDraft.trim();
+
+                      if (!nextModel || nextModel === currentConversation.model) {
+                        setModelDraft(currentConversation.model);
+                        return;
+                      }
+
                       void handleUpdateConversationSelection({
-                        model: event.target.value
-                      })
-                    }
-                    value={currentConversation.model}
-                  >
+                        model: nextModel
+                      });
+                    }}
+                    onChange={(event) => setModelDraft(event.target.value)}
+                    placeholder="Enter model id"
+                    value={modelDraft}
+                  />
+                  <datalist id={`provider-models-${currentConversation.id}`}>
                     {(currentProviderInfo?.models ?? []).map((model) => (
                       <option key={model.id} value={model.id}>
                         {model.displayName}
+                      </option>
+                    ))}
+                  </datalist>
+                </label>
+
+                <label className="toolbar-field">
+                  <span>Reasoning</span>
+                  <select
+                    disabled={Boolean(isStreamingCurrent)}
+                    onChange={(event) => {
+                      const nextReasoningEffort = event.target.value
+                        ? (event.target.value as "low" | "medium" | "high")
+                        : null;
+
+                      void handleUpdateConversationSelection({
+                        reasoningEffort: nextReasoningEffort
+                      });
+                    }}
+                    value={currentConversation.reasoningEffort ?? ""}
+                  >
+                    {REASONING_EFFORT_OPTIONS.map((option) => (
+                      <option key={option.value || "default"} value={option.value}>
+                        {option.label}
                       </option>
                     ))}
                   </select>
@@ -525,6 +581,11 @@ export function ChatPage() {
               {currentConversation.lastMessageAt ? (
                 <span>Updated {new Date(currentConversation.lastMessageAt).toLocaleString()}</span>
               ) : null}
+              {currentConversation.reasoningEffort ? (
+                <span>Reasoning {currentConversation.reasoningEffort}</span>
+              ) : null}
+              {selectedApiKey?.baseUrl ? <span>Endpoint {selectedApiKey.baseUrl}</span> : null}
+              {selectedApiKey?.baseUrl ? <span>Model is freeform for custom endpoints</span> : null}
               </div>
             </div>
           ) : null}

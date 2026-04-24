@@ -92,7 +92,8 @@ class ChatServiceTest {
         when(messageService.createUserMessage(conversation, "hello", "openai", "gpt-4o-mini")).thenReturn(userMessage);
         when(messageService.listEntities(42L)).thenReturn(List.of(userMessage));
         when(promptBuilder.build(conversation, List.of(userMessage))).thenReturn(List.of(ChatMessage.user("hello")));
-        when(apiKeyService.resolveDecryptedKey(7L, "openai", null)).thenReturn(null);
+        when(apiKeyService.resolveForChat(7L, "openai", null))
+                .thenReturn(new ApiKeyService.ResolvedApiKey(null, null));
         when(llmProvider.stream(any(ChatRequest.class), any(ProviderContext.class))).thenReturn(Flux.just(
                 new ChatChunk.Delta("wor"),
                 new ChatChunk.Delta("ld"),
@@ -119,6 +120,7 @@ class ChatServiceTest {
                 0.7,
                 1.0,
                 256,
+                "high",
                 null
         ));
 
@@ -126,6 +128,7 @@ class ChatServiceTest {
         verify(llmProvider).stream(chatRequestCaptor.capture(), any(ProviderContext.class));
         assertEquals("gpt-4o-mini", chatRequestCaptor.getValue().model());
         assertEquals(1, chatRequestCaptor.getValue().messages().size());
+        assertEquals("high", chatRequestCaptor.getValue().reasoningEffort());
         verify(messageService).createAssistantMessage(
                 conversation,
                 "world",
@@ -155,7 +158,8 @@ class ChatServiceTest {
         when(messageService.createUserMessage(conversation, "hello", "openai", "gpt-4o-mini")).thenReturn(userMessage);
         when(messageService.listEntities(42L)).thenReturn(List.of(userMessage));
         when(promptBuilder.build(conversation, List.of(userMessage))).thenReturn(List.of(ChatMessage.user("hello")));
-        when(apiKeyService.resolveDecryptedKey(7L, "openai", null)).thenReturn(null);
+        when(apiKeyService.resolveForChat(7L, "openai", null))
+                .thenReturn(new ApiKeyService.ResolvedApiKey(null, null));
         when(llmProvider.stream(any(ChatRequest.class), any(ProviderContext.class)))
                 .thenReturn(Flux.error(new ApiException(ErrorCode.LLM_UPSTREAM_ERROR, "upstream failed")));
 
@@ -164,6 +168,7 @@ class ChatServiceTest {
                 "openai",
                 "gpt-4o-mini",
                 List.of(new ChatCompletionMessage("user", "hello")),
+                null,
                 null,
                 null,
                 null,
@@ -180,6 +185,7 @@ class ChatServiceTest {
         conversation.setUserId(7L);
         conversation.setProvider("openai");
         conversation.setModel("gpt-4o-mini");
+        conversation.setReasoningEffort("medium");
         return conversation;
     }
 

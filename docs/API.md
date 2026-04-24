@@ -152,6 +152,7 @@
   "provider": "openai",
   "model": "gpt-4o-mini",
   "systemPrompt": null,
+  "reasoningEffort": null,
   "maskId": null
 }
 ```
@@ -169,7 +170,7 @@
 ---
 
 ### PATCH /conversations/{id}
-更新。可改字段：`title`、`pinned`、`archived`、`systemPrompt`、`provider`、`model`、`maskId`。
+更新。可改字段：`title`、`pinned`、`archived`、`systemPrompt`、`provider`、`model`、`reasoningEffort`、`maskId`。
 
 **Response 200**：新的 conversation 对象。
 
@@ -234,6 +235,7 @@
   "temperature": 0.7,
   "topP": 1.0,
   "maxTokens": null,
+  "reasoningEffort": "medium",
   "stream": true,
   "tools": ["calculator"],
   "apiKeyId": null
@@ -243,6 +245,7 @@
 **说明**
 - `messages` 只传**本次要发送的新消息**（通常一条 user）；历史由后端按 `conversationId` 自拼。前端若传全量后端以 DB 为准。
 - `apiKeyId` 为空 = 用服务端 key；指定 = 用用户的加密 key。
+- `reasoningEffort` 当前支持 `low | medium | high`；未传时回退到 conversation 设置。
 - `tools` 空数组 = 不启用工具。
 - `stream: false` 不支持（所有响应必为 SSE）。
 
@@ -408,7 +411,7 @@ data: {"type":"error","code":"LLM_UPSTREAM_ERROR","message":"429 rate limit from
 
 ### POST /api-keys
 
-**Request**：`{ "provider": "openai", "label": "...", "key": "sk-..." }`
+**Request**：`{ "provider": "openai", "label": "...", "baseUrl": "https://proxy.example.com/v1", "key": "sk-..." }`
 
 **Response 201**：同上单项（不含 key）。
 

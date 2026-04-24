@@ -19,6 +19,7 @@ import com.jchat.llm.dto.ChatRequest;
 import com.jchat.llm.dto.ProviderContext;
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ import reactor.core.Disposable;
 public class ChatService {
 
     private static final Logger log = LoggerFactory.getLogger(ChatService.class);
+    private static final Set<String> ALLOWED_REASONING_EFFORTS = Set.of("low", "medium", "high");
 
     private final ConversationService conversationService;
     private final MessageService messageService;
@@ -77,10 +79,11 @@ public class ChatService {
                 promptBuilder.build(conversation, history),
                 request.temperature(),
                 request.topP(),
-                request.maxTokens()
+                request.maxTokens(),
+                normalizeReasoningEffort(request.reasoningEffort(), conversation.getReasoningEffort())
         );
         Long apiKeyId = parseNullableId(request.apiKeyId(), "apiKeyId");
-        String apiKey = apiKeyService.resolveDecryptedKey(userId, providerName, apiKeyId);
+        var resolvedApiKey = apiKeyService.resolveForChat(userId, providerName, apiKeyId);
 
         String requestId = RequestIds.getCurrentRequestId();
         SseEmitter emitter = new SseEmitter(0L);
@@ -98,7 +101,10 @@ public class ChatService {
             throw new ApiException(ErrorCode.INTERNAL_ERROR, "Failed to initialize SSE stream");
         }
 
-        Disposable stream = provider.stream(chatRequest, new ProviderContext(apiKey, null, requestId))
+        Disposable stream = provider.stream(
+                        chatRequest,
+                        new ProviderContext(resolvedApiKey.apiKey(), resolvedApiKey.baseUrl(), requestId)
+                )
                 .subscribe(
                         chunk -> handleChunk(emitter, chunk, completed, clientDisconnected, assistantBuffer, promptTokens, completionTokens, finishReason),
                         error -> handleStreamError(emitter, error, completed, clientDisconnected),
@@ -292,6 +298,23 @@ public class ChatService {
             throw new ApiException(ErrorCode.VALIDATION_FAILED, "model is required");
         }
         return candidate.trim();
+    }
+
+    private String normalizeReasoningEffort(String requestReasoningEffort, String conversationReasoningEffort) {
+        String candidate = StringUtils.hasText(requestReasoningEffort)
+                ? requestReasoningEffort.trim()
+                : conversationReasoningEffort;
+        if (!StringUtils.hasText(candidate)) {
+            return null;
+        }
+        String normalized = candidate.trim().toLowerCase();
+        if (!ALLOWED_REASONING_EFFORTS.contains(normalized)) {
+            throw new ApiException(
+                    ErrorCode.VALIDATION_FAILED,
+                    "reasoningEffort must be one of: low, medium, high"
+            );
+        }
+        return normalized;
     }
 
     private void dispose(AtomicReference<Disposable> streamRef) {

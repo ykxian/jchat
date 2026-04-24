@@ -59,25 +59,26 @@ class ApiKeyControllerTest {
     @Test
     void listReturnsStoredKeys() throws Exception {
         when(apiKeyService.list(7L)).thenReturn(new ApiKeyListResponse(List.of(
-                new ApiKeyResponse("1", "openai", "Personal", "1234", "2026-04-24T10:15:30Z")
+                new ApiKeyResponse("1", "openai", "Personal", "https://proxy.example.com/v1", "1234", "2026-04-24T10:15:30Z")
         )));
 
         mockMvc.perform(get("/api/v1/api-keys"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].provider").value("openai"))
+                .andExpect(jsonPath("$.items[0].baseUrl").value("https://proxy.example.com/v1"))
                 .andExpect(jsonPath("$.items[0].last4").value("1234"));
     }
 
     @Test
     void createReturnsCreatedKey() throws Exception {
         when(apiKeyService.create(eq(7L), any(CreateApiKeyRequest.class))).thenReturn(
-                new ApiKeyResponse("1", "openai", "Personal", "1234", "2026-04-24T10:15:30Z")
+                new ApiKeyResponse("1", "openai", "Personal", "https://proxy.example.com/v1", "1234", "2026-04-24T10:15:30Z")
         );
 
         mockMvc.perform(post("/api/v1/api-keys")
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new CreateApiKeyRequest("openai", "Personal", "sk-test"))))
+                                new CreateApiKeyRequest("openai", "Personal", "https://proxy.example.com/v1", "sk-test"))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value("1"));
     }

@@ -12,6 +12,8 @@ public record CreateConversationRequest(
         @NotBlank(message = "model is required")
         @Size(max = 100, message = "model must be at most 100 characters")
         String model,
-        String systemPrompt
+        String systemPrompt,
+        @Size(max = 20, message = "reasoningEffort must be at most 20 characters")
+        String reasoningEffort
 ) {
 }

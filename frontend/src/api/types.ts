@@ -9,6 +9,7 @@ export interface Conversation {
   provider: string;
   model: string;
   systemPrompt: string | null;
+  reasoningEffort: "low" | "medium" | "high" | null;
   pinned: boolean;
   archived: boolean;
   lastMessageAt: string | null;
@@ -37,6 +38,7 @@ export interface CreateConversationPayload {
   provider: string;
   model: string;
   systemPrompt?: string | null;
+  reasoningEffort?: "low" | "medium" | "high" | null;
 }
 
 export interface UpdateConversationPayload {
@@ -46,6 +48,7 @@ export interface UpdateConversationPayload {
   systemPrompt?: string | null;
   provider?: string | null;
   model?: string | null;
+  reasoningEffort?: "low" | "medium" | "high" | null;
 }
 
 export interface ChatCompletionPayload {
@@ -59,6 +62,7 @@ export interface ChatCompletionPayload {
   temperature?: number;
   topP?: number;
   maxTokens?: number | null;
+  reasoningEffort?: "low" | "medium" | "high" | null;
   apiKeyId?: string | null;
 }
 
@@ -103,6 +107,7 @@ export interface ApiKeyRecord {
   id: string;
   provider: string;
   label: string;
+  baseUrl: string | null;
   last4: string;
   createdAt: string | null;
 }
@@ -114,5 +119,6 @@ export interface ApiKeyListResponse {
 export interface CreateApiKeyPayload {
   provider: string;
   label: string;
+  baseUrl?: string | null;
   key: string;
 }

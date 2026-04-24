@@ -35,6 +35,9 @@ public class Conversation {
     @Column(name = "system_prompt", columnDefinition = "text")
     private String systemPrompt;
 
+    @Column(name = "reasoning_effort", length = 20)
+    private String reasoningEffort;
+
     @Column(nullable = false)
     private boolean pinned;
 
@@ -104,6 +107,14 @@ public class Conversation {
 
     public void setSystemPrompt(String systemPrompt) {
         this.systemPrompt = systemPrompt;
+    }
+
+    public String getReasoningEffort() {
+        return reasoningEffort;
+    }
+
+    public void setReasoningEffort(String reasoningEffort) {
+        this.reasoningEffort = reasoningEffort;
     }
 
     public boolean isPinned() {

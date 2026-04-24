@@ -693,6 +693,7 @@ curl -N http://localhost:8080/api/v1/chat/completions \
 ### 多 Provider 与 Settings
 
 - 已新增 [/backend/src/main/resources/db/migration/V2__user_api_keys.sql](/home/ykx/jchat/backend/src/main/resources/db/migration/V2__user_api_keys.sql)
+- 已新增 [/backend/src/main/resources/db/migration/V3__user_api_keys_base_url.sql](/home/ykx/jchat/backend/src/main/resources/db/migration/V3__user_api_keys_base_url.sql)
 - 已新增 [/backend/src/main/java/com/jchat/apikey/controller/ApiKeyController.java](/home/ykx/jchat/backend/src/main/java/com/jchat/apikey/controller/ApiKeyController.java)
 - 已新增 [/backend/src/main/java/com/jchat/apikey/service/ApiKeyService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/apikey/service/ApiKeyService.java)
 - 已新增 [/backend/src/main/java/com/jchat/apikey/crypto/ApiKeyCipher.java](/home/ykx/jchat/backend/src/main/java/com/jchat/apikey/crypto/ApiKeyCipher.java)
@@ -719,10 +720,13 @@ curl -N http://localhost:8080/api/v1/chat/completions \
 - 服务端 `openai` / `anthropic` / `gemini` 三类 provider 适配器与统一 `supportedModels()` 元数据
 - `GET /api/v1/providers`，可返回 provider 可用性、模型列表、服务端 key 状态与用户 key 摘要
 - `GET/POST/DELETE /api/v1/api-keys`，用户可管理自己的加密 API key
+- 用户 API key 现支持可选 `baseUrl`，同一条凭据可绑定自定义 endpoint
 - `APP_CRYPTO_KEY` 驱动的 AES-GCM 加密存储，数据库仅保存密文和 `last4`
-- chat 请求新增 `apiKeyId`，可在单次对话时切换到用户自己的 provider key
-- Settings 页面可查看 provider 库存、模型列表并新增/删除个人 key
+- chat 请求新增 `apiKeyId`，可在单次对话时切换到用户自己的 provider key 和对应 `baseUrl`
+- Settings 页面可查看 provider 库存、模型列表并新增/删除个人 key 与自定义 endpoint
 - Chat 页面可按当前会话切换 provider、model 和凭据来源（服务端 key / 用户 key）
+- Chat 页面模型字段已支持自由输入，适配自定义 endpoint 下的非内置模型 id
+- Chat 页面已支持会话级 `reasoningEffort`（`low / medium / high`），并在请求时透传给 OpenAI-compatible provider
 
 ### Phase 9 验证结果
 
@@ -745,17 +749,22 @@ curl -N http://localhost:8080/api/v1/chat/completions \
 
 1. 登录后进入 `/settings`
 2. 确认 provider 卡片能显示 `OpenAI Compatible`、`Anthropic Claude`、`Google Gemini`
-3. 新增一条用户 API key，确认列表显示 `label` 与 `last4`
-4. 进入 `/chat`，创建或打开一个会话
-5. 在顶部切换 provider 与 model，确认会话头部和服务端持久化值同步更新
-6. 选择 `Credential` 为 `Server key` 或某个用户 key 后发送消息
-7. 确认流式响应仍正常返回，刷新页面后会话 provider/model 保持不变
+3. 新增一条用户 API key，并填写可选 `baseUrl`
+4. 确认列表显示 `label`、`last4` 与 `baseUrl`
+5. 进入 `/chat`，创建或打开一个会话
+6. 在顶部切换 provider 与 model，确认会话头部和服务端持久化值同步更新
+7. 选择 `Credential` 为 `Server key` 或某个用户 key 后发送消息
+8. 若选中带自定义 `baseUrl` 的用户 key，确认聊天头部能看到当前 endpoint 信息
+9. 确认流式响应仍正常返回，刷新页面后会话 provider/model 保持不变
 
 预期结果：
 
 - `/settings` 能看到 provider 可用性和用户 key 状态
-- 用户 key 不会回显明文，只显示标签和后 4 位
+- 用户 key 不会回显明文，只显示标签、后 4 位和可选 `baseUrl`
 - `/chat` 可切换 provider/model，并在发送时携带所选 `apiKeyId`
+- 当使用自定义 `baseUrl` 时，`/chat` 的模型字段可自由输入，不受内置模型清单限制
+- 若用户 key 绑定了自定义 endpoint，provider 调用会使用该 `baseUrl`
+- `/chat` 可配置 `reasoningEffort`，未设置时回退到默认行为
 - 已有 OpenAI-compatible 主链不被破坏，多 provider 扩展保持兼容
 
 ### 完成判断
@@ -766,11 +775,13 @@ curl -N http://localhost:8080/api/v1/chat/completions \
 
 - 已落地 `AnthropicProvider` 与 `GeminiProvider`
 - 已提供 `/providers` 与用户 API key 加密存储接口
-- 已完成 Settings 页面和聊天页的 provider/model/key 切换接入
+- 已完成 Settings 页面和聊天页的 provider/model/key/baseUrl 切换接入
+- 已补齐 provider 文档要求的“自定义模型输入”能力
+- 已补充会话级 `reasoningEffort` 参数并完成前后端透传
 - 已满足本阶段完成标准：服务端 key 可用、用户 key 可配置、前端可切换 provider/model
 
 保留风险：
 
 - `Anthropic` / `Gemini` 当前只覆盖 Phase 9 所需的最小文本流式链路，tools/function calling 仍保留到 `Phase 11`
-- 当前尚未提供用户级自定义 `baseUrl`，因此 OpenAI-compatible 的 BYOK 仍基于服务端配置的 endpoint
+- `reasoningEffort` 当前只透传到 OpenAI-compatible 请求体，其他 provider 暂未映射
 - 真实上游联调仍建议手工跑一轮，以确认不同 provider 账户和模型命名与本地配置一致

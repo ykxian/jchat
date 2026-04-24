@@ -10,6 +10,7 @@ import com.jchat.common.api.ApiException;
 import com.jchat.common.api.ErrorCode;
 import java.time.Instant;
 import java.util.List;
+import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -45,12 +46,14 @@ public class ApiKeyService {
     public ApiKeyResponse create(Long userId, CreateApiKeyRequest request) {
         String provider = normalizeProvider(request.provider());
         String label = normalizeRequiredText(request.label(), "label");
+        String baseUrl = normalizeBaseUrl(request.baseUrl());
         String key = normalizeRequiredText(request.key(), "key");
 
         UserApiKey entity = new UserApiKey();
         entity.setUserId(userId);
         entity.setProvider(provider);
         entity.setLabel(label);
+        entity.setBaseUrl(baseUrl);
         entity.setEncryptedKey(apiKeyCipher.encrypt(key));
         entity.setLast4(extractLast4(key));
 
@@ -65,9 +68,9 @@ public class ApiKeyService {
     }
 
     @Transactional(readOnly = true)
-    public String resolveDecryptedKey(Long userId, String provider, Long apiKeyId) {
+    public ResolvedApiKey resolveForChat(Long userId, String provider, Long apiKeyId) {
         if (apiKeyId == null) {
-            return null;
+            return new ResolvedApiKey(null, null);
         }
 
         UserApiKey apiKey = userApiKeyRepository.findByIdAndUserIdAndDeletedAtIsNull(apiKeyId, userId)
@@ -76,7 +79,10 @@ public class ApiKeyService {
         if (!apiKey.getProvider().equals(normalizedProvider)) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED, "Selected API key does not match provider");
         }
-        return apiKeyCipher.decrypt(apiKey.getEncryptedKey());
+        return new ResolvedApiKey(
+                apiKeyCipher.decrypt(apiKey.getEncryptedKey()),
+                apiKey.getBaseUrl()
+        );
     }
 
     private String normalizeProvider(String provider) {
@@ -90,7 +96,34 @@ public class ApiKeyService {
         return value.trim();
     }
 
+    private String normalizeBaseUrl(String baseUrl) {
+        if (!StringUtils.hasText(baseUrl)) {
+            return null;
+        }
+
+        String normalized = baseUrl.trim();
+        try {
+            var uri = UriComponentsBuilder.fromUriString(normalized).build().toUri();
+            String scheme = uri.getScheme();
+            if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
+                throw new ApiException(ErrorCode.VALIDATION_FAILED, "baseUrl must use http or https");
+            }
+            if (!StringUtils.hasText(uri.getHost())) {
+                throw new ApiException(ErrorCode.VALIDATION_FAILED, "baseUrl must include a host");
+            }
+            return normalized.replaceAll("/+$", "");
+        } catch (IllegalArgumentException ex) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED, "baseUrl is not a valid URL");
+        }
+    }
+
     private String extractLast4(String key) {
         return key.length() <= 4 ? key : key.substring(key.length() - 4);
+    }
+
+    public record ResolvedApiKey(
+            String apiKey,
+            String baseUrl
+    ) {
     }
 }

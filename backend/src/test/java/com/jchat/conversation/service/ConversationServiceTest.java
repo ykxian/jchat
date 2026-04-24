@@ -57,7 +57,7 @@ class ConversationServiceTest {
 
         ConversationResponse response = conversationService.create(
                 7L,
-                new CreateConversationRequest("  New Chat  ", " openai ", " gpt-4o-mini ", "  be precise  ")
+                new CreateConversationRequest("  New Chat  ", " openai ", " gpt-4o-mini ", "  be precise  ", " high ")
         );
 
         verify(conversationRepository).save(conversationCaptor.capture());
@@ -67,6 +67,7 @@ class ConversationServiceTest {
         assertEquals("openai", saved.getProvider());
         assertEquals("gpt-4o-mini", saved.getModel());
         assertEquals("be precise", saved.getSystemPrompt());
+        assertEquals("high", saved.getReasoningEffort());
         assertEquals("42", response.id());
     }
 
@@ -129,6 +130,7 @@ class ConversationServiceTest {
         conversation.setProvider("openai");
         conversation.setModel("gpt-4o-mini");
         conversation.setSystemPrompt("old prompt");
+        conversation.setReasoningEffort("low");
         conversation.setPinned(false);
         conversation.setArchived(false);
 
@@ -138,13 +140,14 @@ class ConversationServiceTest {
         ConversationResponse response = conversationService.update(
                 7L,
                 5L,
-                new UpdateConversationRequest(" Renamed ", true, null, " new prompt ", null, " gpt-4.1 ")
+                new UpdateConversationRequest(" Renamed ", true, null, " new prompt ", null, " gpt-4.1 ", " medium ")
         );
 
         assertEquals("Renamed", response.title());
         assertEquals("openai", response.provider());
         assertEquals("gpt-4.1", response.model());
         assertEquals("new prompt", response.systemPrompt());
+        assertEquals("medium", response.reasoningEffort());
         assertEquals(true, response.pinned());
         assertEquals(false, response.archived());
     }
@@ -167,11 +170,12 @@ class ConversationServiceTest {
 
         ConversationResponse response = conversationService.create(
                 7L,
-                new CreateConversationRequest(" ", "openai", "gpt-4o-mini", " ")
+                new CreateConversationRequest(" ", "openai", "gpt-4o-mini", " ", " ")
         );
 
         assertNull(response.title());
         assertNull(response.systemPrompt());
+        assertNull(response.reasoningEffort());
     }
 
     private Conversation conversation(Long id, Long userId, Instant updatedAt) {

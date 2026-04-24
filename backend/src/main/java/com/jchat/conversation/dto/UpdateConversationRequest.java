@@ -11,6 +11,8 @@ public record UpdateConversationRequest(
         @Size(min = 1, max = 50, message = "provider must be between 1 and 50 characters")
         String provider,
         @Size(min = 1, max = 100, message = "model must be between 1 and 100 characters")
-        String model
+        String model,
+        @Size(max = 20, message = "reasoningEffort must be at most 20 characters")
+        String reasoningEffort
 ) {
 }

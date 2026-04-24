@@ -321,6 +321,7 @@ code {
 }
 
 .stacked-list__item span {
+  display: block;
   color: rgba(247, 242, 234, 0.68);
 }
 
@@ -334,7 +335,8 @@ code {
 
 .settings-field input,
 .settings-field select,
-.toolbar-field select {
+.toolbar-field select,
+.toolbar-field input {
   width: 100%;
   border-radius: 14px;
   border: 1px solid rgba(247, 242, 234, 0.14);
@@ -348,7 +350,7 @@ code {
 }
 
 .chat-toolbar__controls {
-  grid-template-columns: repeat(3, minmax(160px, 220px));
+  grid-template-columns: repeat(4, minmax(150px, 220px));
 }
 
 .pill {

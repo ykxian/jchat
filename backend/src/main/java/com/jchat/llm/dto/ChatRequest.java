@@ -7,6 +7,7 @@ public record ChatRequest(
         List<ChatMessage> messages,
         Double temperature,
         Double topP,
-        Integer maxTokens
+        Integer maxTokens,
+        String reasoningEffort
 ) {
 }

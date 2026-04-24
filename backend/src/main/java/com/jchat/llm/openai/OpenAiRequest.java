@@ -15,6 +15,8 @@ public record OpenAiRequest(
         Double topP,
         @JsonProperty("max_tokens")
         Integer maxTokens,
+        @JsonProperty("reasoning_effort")
+        String reasoningEffort,
         boolean stream,
         @JsonProperty("stream_options")
         StreamOptions streamOptions
@@ -27,6 +29,7 @@ public record OpenAiRequest(
                 request.temperature(),
                 request.topP(),
                 request.maxTokens(),
+                request.reasoningEffort(),
                 true,
                 new StreamOptions(true)
         );

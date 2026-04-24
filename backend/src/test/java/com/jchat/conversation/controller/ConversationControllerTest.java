@@ -73,6 +73,7 @@ class ConversationControllerTest {
                         "openai",
                         "gpt-4o-mini",
                         null,
+                        null,
                         false,
                         false,
                         null,
@@ -99,6 +100,7 @@ class ConversationControllerTest {
                 "openai",
                 "gpt-4o-mini",
                 "be precise",
+                "high",
                 false,
                 false,
                 null,
@@ -110,10 +112,11 @@ class ConversationControllerTest {
         mockMvc.perform(post("/api/v1/conversations")
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new CreateConversationRequest("Chat", "openai", "gpt-4o-mini", "be precise"))))
+                                new CreateConversationRequest("Chat", "openai", "gpt-4o-mini", "be precise", "high"))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value("42"))
-                .andExpect(jsonPath("$.title").value("Chat"));
+                .andExpect(jsonPath("$.title").value("Chat"))
+                .andExpect(jsonPath("$.reasoningEffort").value("high"));
     }
 
     @Test
@@ -124,6 +127,7 @@ class ConversationControllerTest {
                 "openai",
                 "gpt-4.1",
                 null,
+                "medium",
                 true,
                 false,
                 null,
@@ -135,10 +139,11 @@ class ConversationControllerTest {
         mockMvc.perform(patch("/api/v1/conversations/42")
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new UpdateConversationRequest("Renamed", true, null, null, null, "gpt-4.1"))))
+                                new UpdateConversationRequest("Renamed", true, null, null, null, "gpt-4.1", "medium"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Renamed"))
-                .andExpect(jsonPath("$.pinned").value(true));
+                .andExpect(jsonPath("$.pinned").value(true))
+                .andExpect(jsonPath("$.reasoningEffort").value("medium"));
     }
 
     @Test
