@@ -6,7 +6,7 @@
 
 ## Current Stage
 
-- 当前目标：`Phase 7`
+- 当前目标：`Phase 8`
 - 当前状态：`可开始`
 - 最后更新：`2026-04-24`
 
@@ -543,3 +543,75 @@ curl -N http://localhost:8080/api/v1/chat/completions \
 
 - 由于当前外部上游服务不稳定，尚未在真实上游成功返回的情况下现场复核 `assistant delta + assistant message 持久化成功`
 - 这属于外部依赖验证缺口，不是当前代码范围内已知阻塞项
+
+---
+
+## Phase 7 已完成
+
+### chat 前端主界面
+
+- 已新增 [/frontend/src/api/types.ts](/home/ykx/jchat/frontend/src/api/types.ts)
+- 已新增 [/frontend/src/api/conversations.ts](/home/ykx/jchat/frontend/src/api/conversations.ts)
+- 已新增 [/frontend/src/api/chat.ts](/home/ykx/jchat/frontend/src/api/chat.ts)
+- 已新增 [/frontend/src/stores/conversationStore.ts](/home/ykx/jchat/frontend/src/stores/conversationStore.ts)
+- 已新增 [/frontend/src/stores/streamStore.ts](/home/ykx/jchat/frontend/src/stores/streamStore.ts)
+- 已新增 [/frontend/src/components/conversation/Sidebar.tsx](/home/ykx/jchat/frontend/src/components/conversation/Sidebar.tsx)
+- 已新增 [/frontend/src/components/chat/MessageList.tsx](/home/ykx/jchat/frontend/src/components/chat/MessageList.tsx)
+- 已新增 [/frontend/src/components/chat/Composer.tsx](/home/ykx/jchat/frontend/src/components/chat/Composer.tsx)
+- 已新增 [/frontend/src/components/chat/StreamingMessage.tsx](/home/ykx/jchat/frontend/src/components/chat/StreamingMessage.tsx)
+- 已更新 [/frontend/src/pages/ChatPage.tsx](/home/ykx/jchat/frontend/src/pages/ChatPage.tsx)
+- 已更新 [/frontend/src/components/layout/AppShell.tsx](/home/ykx/jchat/frontend/src/components/layout/AppShell.tsx)
+- 已更新 [/frontend/src/styles/globals.css](/home/ykx/jchat/frontend/src/styles/globals.css)
+
+当前前端已具备：
+
+- 聊天工作区主界面：左侧会话列表，右侧消息区与输入区
+- 新建会话后自动路由跳转到 `/chat/:conversationId`
+- 刷新页面后重新加载会话列表与当前会话消息历史
+- 发送消息时立即显示 user draft 与 assistant draft
+- 通过 `fetch + ReadableStream` 解析后端 SSE，实时追加 assistant delta
+- 流结束后自动回拉会话与消息，和服务端持久化结果重新对齐
+- 流式请求支持 access token 过期后的自动 refresh 重试
+- 支持主动停止当前流式请求
+
+### Phase 7 验证结果
+
+已完成验证：
+
+- `cd frontend && npm run build` 通过
+- TypeScript 严格模式校验通过
+- Vite 生产构建通过
+
+### 手工验证建议
+
+在 backend 已启动、浏览器可访问前端 dev server、并且服务端已配置可用 `OPENAI_API_KEY` 的前提下，可按以下方式验证：
+
+1. 打开 `http://localhost:5173`
+2. 注册或登录后进入 `/chat`
+3. 点击 `New Chat`
+4. 输入一条消息并发送
+5. 观察 assistant 内容是否逐步流出
+6. 刷新页面，确认会话列表和消息历史能重新加载
+
+预期结果：
+
+- 新会话创建成功并进入 `/chat/{id}`
+- user message 立即显示
+- assistant draft 随 SSE delta 实时更新
+- 流结束后消息内容与后端持久化结果一致
+- 刷新后历史仍可从服务端重新取回
+
+### 完成判断
+
+按路线图交付物和本地构建验证判断，`Phase 7` 已完成，可以进入 `Phase 8`。
+
+原因：
+
+- `ChatPage`、`Sidebar`、`MessageList`、`Composer`、`api/chat.ts`、`conversationStore`、`streamStore` 均已落地
+- 已联通现有 conversations/chat backend
+- 已满足本阶段完成标准：新建会话、发消息、实时显示流式回复、刷新后重新加载历史
+
+保留风险：
+
+- 本次只做服务端权威数据直连，尚未接入 Dexie 本地缓存，因此“首屏秒开 / 离线只读”仍属于 `Phase 8`
+- 当前前端未覆盖自动化 UI 测试，真实浏览器联调仍建议执行一轮

@@ -29,10 +29,10 @@ export function AppShell() {
       <aside className="shell-sidebar">
         <div className="shell-sidebar__header">
           <p className="eyebrow">jchat</p>
-          <h1>Authenticated Workspace</h1>
+          <h1>Workspace</h1>
           <p className="muted">
-            Phase 4 wires the SPA to the auth backend so protected routes can
-            survive refresh and return cleanly after logout.
+            Auth, conversation history, and streaming chat now share the same
+            protected shell.
           </p>
         </div>
 
@@ -61,9 +61,9 @@ export function AppShell() {
         <section className="shell-note">
           <p className="eyebrow">Ready For</p>
           <ul className="feature-list">
-            <li>Conversation list and message pane</li>
-            <li>Settings forms and provider management</li>
+            <li>Conversation list and message reload after refresh</li>
             <li>Streaming chat linked to authenticated requests</li>
+            <li>Settings and provider expansion in later phases</li>
           </ul>
         </section>
       </aside>
@@ -72,10 +72,10 @@ export function AppShell() {
         <header className="shell-header">
           <div>
             <p className="eyebrow">Workspace</p>
-            <h2>React SPA shell</h2>
+            <h2>React SPA</h2>
           </div>
           <div className="button-row">
-            <span className="pill">Auth + refresh + route guard</span>
+            <span className="pill">Auth + conversations + SSE</span>
             <button
               className="button button--ghost"
               disabled={isLoggingOut}
