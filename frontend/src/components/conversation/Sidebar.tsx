@@ -4,6 +4,7 @@ interface SidebarProps {
   conversations: Conversation[];
   currentConversationId: string | null;
   isCreatingConversation: boolean;
+  isOffline?: boolean;
   isLoading: boolean;
   onCreateConversation: () => void;
   onSelectConversation: (conversationId: string) => void;
@@ -21,6 +22,7 @@ export function Sidebar({
   conversations,
   currentConversationId,
   isCreatingConversation,
+  isOffline = false,
   isLoading,
   onCreateConversation,
   onSelectConversation
@@ -34,11 +36,11 @@ export function Sidebar({
         </div>
         <button
           className="button button--primary"
-          disabled={isCreatingConversation}
+          disabled={isCreatingConversation || isOffline}
           onClick={onCreateConversation}
           type="button"
         >
-          {isCreatingConversation ? "Creating..." : "New Chat"}
+          {isCreatingConversation ? "Creating..." : isOffline ? "Offline" : "New Chat"}
         </button>
       </div>
 
@@ -49,7 +51,9 @@ export function Sidebar({
 
         {!isLoading && !conversations.length ? (
           <div className="conversation-item conversation-item--placeholder">
-            No conversations yet. Create one to start chatting.
+            {isOffline
+              ? "You're offline. Cached conversations will appear here when available."
+              : "No conversations yet. Create one to start chatting."}
           </div>
         ) : null}
 

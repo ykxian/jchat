@@ -6,7 +6,7 @@ React SPA，jchat 项目的前端模块。
 
 ## 当前状态
 
-当前已进入 `Phase 4` auth 前端联通阶段。
+当前已进入 `Phase 8` 本地缓存与体验补强阶段，并已落地 Dexie 会话缓存。
 
 已完成：
 
@@ -19,16 +19,19 @@ React SPA，jchat 项目的前端模块。
 - `AuthGuard` / `PublicOnlyGuard` 受保护路由与回跳逻辑
 - `LoginPage`、`RegisterPage` 已联通 `/auth/register` 与 `/auth/login`
 - `src/stores/authStore.ts` 内存态登录状态管理（access token 不落盘）
+- `src/db/dexie.ts` Dexie schema，缓存 conversations / messages
 - `src/api/client.ts` 统一请求封装（JSON body / query / typed error / 401 自动 refresh）
 - `src/api/auth.ts` auth 端点封装
+- `ChatPage` 首屏先读本地缓存，再由服务端权威数据覆盖
+- 离线只读兜底：缓存历史可看，发送与新建会话禁用
 - 全局样式与响应式布局骨架
 - `/api` 代理配置
 
 尚未完成：
 
-- Zustand / TanStack Query / Dexie
-- 会话列表、消息流、SSE 解析
-- 业务表单、状态管理、接口联调
+- 多 Provider 设置页联动
+- Masks / Files / PWA
+- 自动化 UI 测试
 
 继续开发前，先看 [`docs/IMPLEMENTATION-STATUS.md`](../docs/IMPLEMENTATION-STATUS.md)。
 

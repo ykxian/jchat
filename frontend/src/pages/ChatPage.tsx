@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { streamChatCompletion } from "../api/chat";
 import { conversationsApi } from "../api/conversations";
@@ -7,6 +7,8 @@ import { Composer } from "../components/chat/Composer";
 import { MessageList } from "../components/chat/MessageList";
 import { StreamingMessage } from "../components/chat/StreamingMessage";
 import { Sidebar } from "../components/conversation/Sidebar";
+import { chatCache } from "../db/dexie";
+import { useAuthStore } from "../stores/authStore";
 import { conversationStore, useConversationStore } from "../stores/conversationStore";
 import { streamStore, useStreamStore } from "../stores/streamStore";
 
@@ -50,6 +52,10 @@ function getConversationHeading(conversation: Conversation | null) {
 export function ChatPage() {
   const navigate = useNavigate();
   const { conversationId } = useParams();
+  const userId = useAuthStore((state) => state.user?.id ?? null);
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof navigator === "undefined" ? true : navigator.onLine
+  );
   const [pageError, setPageError] = useState<string | null>(null);
   const conversations = useConversationStore((state) => state.items);
   const currentId = useConversationStore((state) => state.currentId);
@@ -65,10 +71,46 @@ export function ChatPage() {
   const isStreamingCurrent = stream?.conversationId === currentId && stream.isStreaming;
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    function handleOnline() {
+      setIsOnline(true);
+    }
+
+    function handleOffline() {
+      setIsOnline(false);
+    }
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
+    const activeUserId = userId;
     let cancelled = false;
 
     async function loadConversations() {
       conversationStore.setLoadingList(true);
+      const cachedItems = await chatCache.listConversations(activeUserId);
+
+      if (cancelled) {
+        return;
+      }
+
+      if (cachedItems.length) {
+        conversationStore.setConversations(cachedItems);
+      }
 
       try {
         const response = await conversationsApi.list();
@@ -78,9 +120,10 @@ export function ChatPage() {
         }
 
         conversationStore.setConversations(response.items);
+        await chatCache.replaceConversations(activeUserId, response.items);
         setPageError(null);
       } catch (error) {
-        if (!cancelled) {
+        if (!cancelled && !cachedItems.length) {
           setPageError(error instanceof Error ? error.message : "Failed to load conversations");
         }
       } finally {
@@ -95,22 +138,39 @@ export function ChatPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     conversationStore.setCurrent(conversationId ?? null);
   }, [conversationId]);
 
   useEffect(() => {
-    if (!conversationId) {
+    if (!conversationId || !userId) {
       return;
     }
 
+    const activeUserId = userId;
     const targetConversationId = conversationId;
     let cancelled = false;
 
     async function loadMessages() {
       conversationStore.setLoadingMessages(true);
+      const [cachedConversation, cachedMessages] = await Promise.all([
+        chatCache.getConversation(activeUserId, targetConversationId),
+        chatCache.listMessages(activeUserId, targetConversationId)
+      ]);
+
+      if (cancelled) {
+        return;
+      }
+
+      if (cachedConversation) {
+        conversationStore.upsertConversation(cachedConversation);
+      }
+
+      if (cachedConversation || cachedMessages.length) {
+        conversationStore.setMessages(targetConversationId, cachedMessages);
+      }
 
       try {
         const [conversation, messagePage] = await Promise.all([
@@ -124,9 +184,13 @@ export function ChatPage() {
 
         conversationStore.upsertConversation(conversation);
         conversationStore.setMessages(targetConversationId, messagePage.items);
+        await Promise.all([
+          chatCache.upsertConversation(activeUserId, conversation),
+          chatCache.replaceMessages(activeUserId, targetConversationId, messagePage.items)
+        ]);
         setPageError(null);
       } catch (error) {
-        if (!cancelled) {
+        if (!cancelled && !cachedConversation && !cachedMessages.length) {
           setPageError(error instanceof Error ? error.message : "Failed to load conversation");
         }
       } finally {
@@ -141,15 +205,14 @@ export function ChatPage() {
     return () => {
       cancelled = true;
     };
-  }, [conversationId]);
-
-  const sidebarConversations = useMemo(() => conversations, [conversations]);
+  }, [conversationId, userId]);
 
   async function handleCreateConversation() {
-    if (isCreatingConversation) {
+    if (isCreatingConversation || !isOnline || !userId) {
       return;
     }
 
+    const activeUserId = userId;
     conversationStore.setCreatingConversation(true);
 
     try {
@@ -159,6 +222,7 @@ export function ChatPage() {
         title: null
       });
       conversationStore.upsertConversation(conversation);
+      await chatCache.upsertConversation(activeUserId, conversation);
       setPageError(null);
       navigate(`/chat/${conversation.id}`);
     } catch (error) {
@@ -169,16 +233,36 @@ export function ChatPage() {
   }
 
   async function syncConversationMessages(targetConversationId: string) {
+    if (!userId) {
+      return;
+    }
+
+    const activeUserId = userId;
     const [conversation, messagePage] = await Promise.all([
       conversationsApi.get(targetConversationId),
       conversationsApi.listMessages(targetConversationId)
     ]);
     conversationStore.upsertConversation(conversation);
     conversationStore.setMessages(targetConversationId, messagePage.items);
+    await Promise.all([
+      chatCache.upsertConversation(activeUserId, conversation),
+      chatCache.replaceMessages(activeUserId, targetConversationId, messagePage.items)
+    ]);
   }
 
   async function handleSendMessage(content: string) {
+    if (!isOnline) {
+      setPageError("Offline mode is read-only. Reconnect to send messages.");
+      return;
+    }
+
+    if (!userId) {
+      setPageError("Session expired. Please sign in again.");
+      return;
+    }
+
     try {
+      const activeUserId = userId;
       let targetConversationId = currentId;
 
       if (!targetConversationId) {
@@ -188,6 +272,7 @@ export function ChatPage() {
           title: null
         });
         conversationStore.upsertConversation(conversation);
+        await chatCache.upsertConversation(activeUserId, conversation);
         targetConversationId = conversation.id;
         navigate(`/chat/${conversation.id}`);
       }
@@ -271,9 +356,10 @@ export function ChatPage() {
   return (
     <div className="chat-layout">
       <Sidebar
-        conversations={sidebarConversations}
+        conversations={conversations}
         currentConversationId={currentId}
         isCreatingConversation={isCreatingConversation}
+        isOffline={!isOnline}
         isLoading={isLoadingList}
         onCreateConversation={() => void handleCreateConversation()}
         onSelectConversation={(nextConversationId) => navigate(`/chat/${nextConversationId}`)}
@@ -300,6 +386,13 @@ export function ChatPage() {
           ) : null}
         </header>
 
+        {!isOnline ? (
+          <div className="status-banner status-banner--warning">
+            You're offline. Cached conversations stay readable, but new writes are disabled until
+            the network returns.
+          </div>
+        ) : null}
+
         {pageError ? <div className="auth-feedback auth-feedback--error">{pageError}</div> : null}
 
         <StreamingMessage error={stream?.error ?? null} isStreaming={Boolean(isStreamingCurrent)} />
@@ -308,6 +401,7 @@ export function ChatPage() {
 
         <Composer
           disabled={Boolean(conversationId && isLoadingMessages)}
+          isOffline={!isOnline}
           isStreaming={Boolean(isStreamingCurrent)}
           onAbort={handleAbort}
           onSubmit={handleSendMessage}

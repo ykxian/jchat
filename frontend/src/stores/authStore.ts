@@ -1,4 +1,6 @@
 import { useSyncExternalStore } from "react";
+import { conversationStore } from "./conversationStore";
+import { streamStore } from "./streamStore";
 
 export interface AuthUser {
   id: string;
@@ -76,6 +78,8 @@ export const authStore = {
     });
   },
   clearAuth() {
+    conversationStore.reset();
+    streamStore.clear();
     setState({
       status: "anonymous",
       user: null,

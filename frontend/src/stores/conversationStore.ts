@@ -41,19 +41,6 @@ function updateState(updater: (current: ConversationState) => ConversationState)
   setState(updater(state));
 }
 
-function upsertConversationList(items: Conversation[], existing: Conversation[]) {
-  const seen = new Set(items.map((item) => item.id));
-  const merged = [...items];
-
-  for (const item of existing) {
-    if (!seen.has(item.id)) {
-      merged.push(item);
-    }
-  }
-
-  return merged;
-}
-
 function sortConversations(items: Conversation[]) {
   return [...items].sort((left, right) => {
     const leftStamp = left.lastMessageAt ?? left.updatedAt ?? left.createdAt ?? "";
@@ -86,6 +73,17 @@ function getState() {
 export const conversationStore = {
   subscribe,
   getState,
+  reset() {
+    setState({
+      currentId: null,
+      currentMessagesLoaded: false,
+      isCreatingConversation: false,
+      isLoadingMessages: false,
+      isLoadingList: false,
+      items: [],
+      messagesByConversation: {}
+    });
+  },
   setCurrent(currentId: string | null) {
     updateState((current) => ({
       ...current,
@@ -114,17 +112,14 @@ export const conversationStore = {
   setConversations(items: Conversation[]) {
     updateState((current) => ({
       ...current,
-      items: sortConversations(upsertConversationList(items, current.items))
+      items: sortConversations(items)
     }));
   },
   upsertConversation(item: Conversation) {
     updateState((current) => ({
       ...current,
       items: sortConversations(
-        upsertConversationList(
-          [item],
-          current.items.filter((conversation) => conversation.id !== item.id)
-        )
+        [item, ...current.items.filter((conversation) => conversation.id !== item.id)]
       )
     }));
   },

@@ -6,7 +6,7 @@
 
 ## Current Stage
 
-- 当前目标：`Phase 8`
+- 当前目标：`Phase 9`
 - 当前状态：`可开始`
 - 最后更新：`2026-04-24`
 
@@ -615,3 +615,73 @@ curl -N http://localhost:8080/api/v1/chat/completions \
 
 - 本次只做服务端权威数据直连，尚未接入 Dexie 本地缓存，因此“首屏秒开 / 离线只读”仍属于 `Phase 8`
 - 当前前端未覆盖自动化 UI 测试，真实浏览器联调仍建议执行一轮
+
+---
+
+## Phase 8 已完成
+
+### 本地缓存与体验补强
+
+- 已新增 [/frontend/src/db/dexie.ts](/home/ykx/jchat/frontend/src/db/dexie.ts)
+- 已更新 [/frontend/src/pages/ChatPage.tsx](/home/ykx/jchat/frontend/src/pages/ChatPage.tsx)
+- 已更新 [/frontend/src/stores/conversationStore.ts](/home/ykx/jchat/frontend/src/stores/conversationStore.ts)
+- 已更新 [/frontend/src/stores/authStore.ts](/home/ykx/jchat/frontend/src/stores/authStore.ts)
+- 已更新 [/frontend/src/components/chat/Composer.tsx](/home/ykx/jchat/frontend/src/components/chat/Composer.tsx)
+- 已更新 [/frontend/src/components/conversation/Sidebar.tsx](/home/ykx/jchat/frontend/src/components/conversation/Sidebar.tsx)
+- 已更新 [/frontend/src/styles/globals.css](/home/ykx/jchat/frontend/src/styles/globals.css)
+- 已更新 [/frontend/README.md](/home/ykx/jchat/frontend/README.md)
+- 已更新 [/frontend/package.json](/home/ykx/jchat/frontend/package.json)
+- 已更新 [/frontend/package-lock.json](/home/ykx/jchat/frontend/package-lock.json)
+
+当前前端已具备：
+
+- Dexie `conversations` / `messages` 本地缓存 schema
+- 缓存按 `userId` 隔离，避免多账号会话数据串读
+- 进入 `/chat` 后先从 IndexedDB 读取缓存并立即渲染
+- 联网成功后用服务端返回的 conversations / messages 覆盖本地缓存
+- 草稿消息只保留在内存，不写入 IndexedDB，避免与服务端权威数据产生双写冲突
+- 离线时保留会话浏览能力，并禁用 `New Chat` 与发送消息
+- 登出或 refresh 失效时会清空内存态会话与流式状态，避免旧用户数据残留
+
+### Phase 8 验证结果
+
+已完成验证：
+
+- `cd frontend && npm run build` 通过
+- TypeScript 严格模式校验通过
+- Vite 生产构建通过
+
+### 手工验证建议
+
+在 backend 已启动、前端 dev server 可访问、并且浏览器支持 IndexedDB 的前提下，可按以下方式验证：
+
+1. 登录后进入 `/chat`
+2. 打开已有会话或发送一条新消息，确保列表与消息已落到缓存
+3. 刷新页面，确认会话列表与当前消息先于网络返回被渲染
+4. 在浏览器 DevTools 中切到 `Offline`
+5. 再次刷新 `/chat` 或直接进入某个已缓存会话
+6. 确认历史仍可阅读，且 `New Chat` 与发送按钮被禁用
+7. 恢复网络，确认服务端数据会重新覆盖本地内容
+
+预期结果：
+
+- 刷新后先看到缓存，再看到服务端最终结果
+- 离线时已缓存历史可读
+- 离线时不会产生新的本地写入或待同步草稿
+- 恢复联网后，服务端数据继续保持权威
+
+### 完成判断
+
+按路线图交付物和本地构建验证判断，`Phase 8` 已完成，可以进入 `Phase 9`。
+
+原因：
+
+- 已落地 Dexie schema
+- 会话与消息已支持 read-through / write-through 缓存
+- 已满足“刷新后先显示缓存、联网后由服务端覆盖、不引入双写冲突”的阶段标准
+
+保留风险：
+
+- 当前离线能力仍是“只读”，未实现 PWA app shell 或 service worker，这仍属于后续阶段
+- 前端仍缺少自动化浏览器测试，离线场景需要人工再跑一轮
+- 当前仓库尚未提供用户自定义 API key 设置，真实上游聊天手工联调仍依赖服务端环境已预置可用 provider key；更完整的联调便利性放到 `Phase 9`
