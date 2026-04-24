@@ -33,6 +33,7 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.7")
     implementation("org.postgresql:postgresql")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
+    implementation("net.objecthunter:exp4j:0.4.8")
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 

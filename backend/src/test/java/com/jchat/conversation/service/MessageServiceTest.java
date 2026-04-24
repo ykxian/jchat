@@ -1,5 +1,6 @@
 package com.jchat.conversation.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jchat.common.jpa.CursorPage;
 import com.jchat.common.jpa.InstantIdCursor;
 import com.jchat.conversation.dto.MessageResponse;
@@ -39,7 +40,7 @@ class MessageServiceTest {
 
     @BeforeEach
     void setUp() {
-        messageService = new MessageService(messageRepository, conversationRepository, conversationService);
+        messageService = new MessageService(messageRepository, conversationRepository, conversationService, new ObjectMapper());
     }
 
     @Test

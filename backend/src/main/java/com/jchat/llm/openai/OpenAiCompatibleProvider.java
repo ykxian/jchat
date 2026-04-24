@@ -51,9 +51,9 @@ public class OpenAiCompatibleProvider implements LlmProvider {
     @Override
     public List<ModelSpec> supportedModels() {
         return List.of(
-                new ModelSpec("gpt-4o-mini", "GPT-4o mini", 128000, false),
-                new ModelSpec("gpt-4o", "GPT-4o", 128000, false),
-                new ModelSpec("gpt-4.1", "GPT-4.1", 128000, false)
+                new ModelSpec("gpt-4o-mini", "GPT-4o mini", 128000, true),
+                new ModelSpec("gpt-4o", "GPT-4o", 128000, true),
+                new ModelSpec("gpt-4.1", "GPT-4.1", 128000, true)
         );
     }
 
@@ -120,6 +120,24 @@ public class OpenAiCompatibleProvider implements LlmProvider {
             JsonNode content = delta.path("content");
             if (content.isTextual() && StringUtils.hasText(content.asText())) {
                 chunks.add(new ChatChunk.Delta(content.asText()));
+            }
+
+            JsonNode toolCalls = delta.path("tool_calls");
+            if (toolCalls.isArray()) {
+                for (JsonNode toolCall : toolCalls) {
+                    String id = toolCall.path("id").asText(null);
+                    JsonNode function = toolCall.path("function");
+                    String name = function.path("name").asText(null);
+                    String rawArguments = function.path("arguments").asText(null);
+                    if (!StringUtils.hasText(id) || !StringUtils.hasText(name) || !StringUtils.hasText(rawArguments)) {
+                        continue;
+                    }
+                    try {
+                        chunks.add(new ChatChunk.ToolCall(id, name, objectMapper.readTree(rawArguments)));
+                    } catch (IOException ex) {
+                        throw new ApiException(ErrorCode.LLM_UPSTREAM_ERROR, "Failed to parse OpenAI-compatible tool call arguments");
+                    }
+                }
             }
         }
 

@@ -8,6 +8,13 @@ public record ChatRequest(
         Double temperature,
         Double topP,
         Integer maxTokens,
-        String reasoningEffort
+        String reasoningEffort,
+        List<ToolSpec> tools
 ) {
+    public record ToolSpec(
+            String name,
+            String description,
+            com.fasterxml.jackson.databind.JsonNode jsonSchema
+    ) {
+    }
 }

@@ -16,6 +16,7 @@ public class AppProperties {
     private final Crypto crypto = new Crypto();
     private final Chat chat = new Chat();
     private final Llm llm = new Llm();
+    private final Tools tools = new Tools();
 
     public String getName() {
         return name;
@@ -51,6 +52,10 @@ public class AppProperties {
 
     public Llm getLlm() {
         return llm;
+    }
+
+    public Tools getTools() {
+        return tools;
     }
 
     public static class Cors {
@@ -213,6 +218,19 @@ public class AppProperties {
 
         public Gemini getGemini() {
             return gemini;
+        }
+    }
+
+    public static class Tools {
+
+        private boolean calculatorEnabled = true;
+
+        public boolean isCalculatorEnabled() {
+            return calculatorEnabled;
+        }
+
+        public void setCalculatorEnabled(boolean calculatorEnabled) {
+            this.calculatorEnabled = calculatorEnabled;
         }
     }
 

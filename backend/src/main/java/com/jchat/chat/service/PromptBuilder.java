@@ -1,5 +1,6 @@
 package com.jchat.chat.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.jchat.conversation.entity.Conversation;
 import com.jchat.conversation.entity.Message;
 import com.jchat.conversation.entity.MessageRole;
@@ -25,20 +26,42 @@ public class PromptBuilder {
         }
 
         for (Message message : history) {
-            if (!StringUtils.hasText(message.getContent())) {
-                continue;
+            ChatMessage promptMessage = toPromptMessage(message);
+            if (promptMessage != null) {
+                prompt.add(promptMessage);
             }
-            prompt.add(toPromptMessage(message.getRole(), message.getContent()));
         }
         return prompt;
     }
 
-    private ChatMessage toPromptMessage(MessageRole role, String content) {
-        return switch (role) {
-            case system -> ChatMessage.system(content);
-            case assistant -> ChatMessage.assistant(content);
-            case tool -> new ChatMessage("tool", content);
-            case user -> ChatMessage.user(content);
+    private ChatMessage toPromptMessage(Message message) {
+        String content = message.getContent();
+        return switch (message.getRole()) {
+            case system -> StringUtils.hasText(content) ? ChatMessage.system(content) : null;
+            case assistant -> toAssistantMessage(message, content);
+            case tool -> StringUtils.hasText(content) ? ChatMessage.tool(message.getToolCallId(), content) : null;
+            case user -> StringUtils.hasText(content) ? ChatMessage.user(content) : null;
         };
+    }
+
+    private ChatMessage toAssistantMessage(Message message, String content) {
+        JsonNode toolCalls = message.getToolCalls();
+        if (toolCalls != null && toolCalls.isArray() && !toolCalls.isEmpty()) {
+            List<ChatMessage.ToolCall> normalized = new ArrayList<>();
+            for (JsonNode node : toolCalls) {
+                String id = node.path("id").asText(null);
+                String name = node.path("name").asText(null);
+                JsonNode arguments = node.path("arguments");
+                if (!StringUtils.hasText(id) || !StringUtils.hasText(name) || arguments.isMissingNode()) {
+                    continue;
+                }
+                normalized.add(new ChatMessage.ToolCall(id, name, arguments.deepCopy()));
+            }
+            if (!normalized.isEmpty()) {
+                return ChatMessage.assistantToolCalls(normalized);
+            }
+        }
+
+        return StringUtils.hasText(content) ? ChatMessage.assistant(content) : null;
     }
 }

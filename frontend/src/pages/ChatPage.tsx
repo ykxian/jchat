@@ -54,6 +54,36 @@ function buildAssistantDraft(): Message {
   };
 }
 
+function buildToolCallDraft(toolCallId: string, toolName: string, toolArguments: unknown): Message {
+  return {
+    completionTokens: null,
+    content: "",
+    createdAt: new Date().toISOString(),
+    fileIds: [],
+    id: `draft-tool-call-${toolCallId}`,
+    parentId: null,
+    promptTokens: null,
+    role: "assistant",
+    toolCallId: null,
+    toolCalls: [{ arguments: toolArguments, id: toolCallId, name: toolName }]
+  };
+}
+
+function buildToolResultDraft(toolCallId: string, content: string): Message {
+  return {
+    completionTokens: null,
+    content,
+    createdAt: new Date().toISOString(),
+    fileIds: [],
+    id: `draft-tool-result-${toolCallId}`,
+    parentId: null,
+    promptTokens: null,
+    role: "tool",
+    toolCallId,
+    toolCalls: null
+  };
+}
+
 function getConversationHeading(conversation: Conversation | null) {
   return conversation?.title?.trim() || "New conversation";
 }
@@ -424,6 +454,21 @@ export function ChatPage() {
                 promptTokens: event.prompt ?? null
               });
               return;
+            }
+
+            if (event.type === "tool_call" && event.toolCallId && event.toolName) {
+              conversationStore.addMessage(
+                targetConversationId,
+                buildToolCallDraft(event.toolCallId, event.toolName, event.toolArguments)
+              );
+              return;
+            }
+
+            if (event.type === "tool_result" && event.toolCallId) {
+              conversationStore.addMessage(
+                targetConversationId,
+                buildToolResultDraft(event.toolCallId, event.toolResult ?? "")
+              );
             }
           }
         },

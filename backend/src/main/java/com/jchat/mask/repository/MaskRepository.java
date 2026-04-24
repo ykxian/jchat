@@ -22,15 +22,6 @@ public interface MaskRepository extends JpaRepository<Mask, Long> {
                         )
                     )
             )
-              and (
-                    :query is null
-                    or lower(m.name) like concat('%', lower(:query), '%')
-                    or exists (
-                        select 1
-                        from unnest(m.tags) as tag
-                        where lower(tag) like concat('%', lower(:query), '%')
-                    )
-              )
             order by m.createdAt desc, m.id desc
             """)
     List<Mask> findFirstPage(

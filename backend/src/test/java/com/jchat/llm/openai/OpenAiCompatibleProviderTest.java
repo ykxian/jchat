@@ -53,9 +53,39 @@ class OpenAiCompatibleProviderTest {
                 0.7,
                 1.0,
                 256,
-                "high"
+                "high",
+                null
         ));
 
         assertEquals("high", request.reasoningEffort());
+    }
+
+    @Test
+    void parseEventDataExtractsToolCall() {
+        String payload = """
+                {
+                  "choices":[{
+                    "delta":{
+                      "tool_calls":[{
+                        "id":"call_1",
+                        "function":{
+                          "name":"calculator",
+                          "arguments":"{\\"expression\\":\\"(25^3 - 17) * 3\\"}"
+                        }
+                      }]
+                    },
+                    "finish_reason":"tool_calls"
+                  }]
+                }
+                """;
+
+        List<ChatChunk> chunks = provider.parseEventData(payload);
+
+        assertEquals(2, chunks.size());
+        ChatChunk.ToolCall toolCall = (ChatChunk.ToolCall) chunks.get(0);
+        assertEquals("call_1", toolCall.id());
+        assertEquals("calculator", toolCall.name());
+        assertEquals("(25^3 - 17) * 3", toolCall.arguments().path("expression").asText());
+        assertEquals(FinishReason.TOOL_CALLS, ((ChatChunk.Done) chunks.get(1)).reason());
     }
 }

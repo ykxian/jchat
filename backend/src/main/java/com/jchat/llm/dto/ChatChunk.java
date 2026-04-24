@@ -1,8 +1,13 @@
 package com.jchat.llm.dto;
 
-public sealed interface ChatChunk permits ChatChunk.Delta, ChatChunk.Usage, ChatChunk.Done, ChatChunk.Error {
+import com.fasterxml.jackson.databind.JsonNode;
+
+public sealed interface ChatChunk permits ChatChunk.Delta, ChatChunk.ToolCall, ChatChunk.Usage, ChatChunk.Done, ChatChunk.Error {
 
     record Delta(String content) implements ChatChunk {
+    }
+
+    record ToolCall(String id, String name, JsonNode arguments) implements ChatChunk {
     }
 
     record Usage(int promptTokens, int completionTokens) implements ChatChunk {

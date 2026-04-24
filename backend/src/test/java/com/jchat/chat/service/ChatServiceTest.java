@@ -6,7 +6,6 @@ import com.jchat.chat.dto.ChatCompletionRequest;
 import com.jchat.chat.dto.SseMessage;
 import com.jchat.common.api.ApiException;
 import com.jchat.common.api.ErrorCode;
-import com.jchat.config.AppProperties;
 import com.jchat.conversation.entity.Conversation;
 import com.jchat.conversation.entity.Message;
 import com.jchat.conversation.entity.MessageRole;
@@ -20,7 +19,9 @@ import com.jchat.llm.dto.ChatRequest;
 import com.jchat.llm.dto.FinishReason;
 import com.jchat.llm.dto.ProviderContext;
 import com.jchat.mask.service.MaskService;
+import com.jchat.plugin.ToolExecutor;
 import java.util.List;
+import java.util.concurrent.Executor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,6 +67,9 @@ class ChatServiceTest {
     @Mock
     private MaskService maskService;
 
+    @Mock
+    private ToolExecutor toolExecutor;
+
     @Captor
     private ArgumentCaptor<ChatRequest> chatRequestCaptor;
 
@@ -79,9 +83,10 @@ class ChatServiceTest {
                 promptBuilder,
                 llmProviderRegistry,
                 sseEventWriter,
-                new AppProperties(),
                 apiKeyService,
-                maskService
+                maskService,
+                toolExecutor,
+                Runnable::run
         );
     }
 
@@ -135,6 +140,7 @@ class ChatServiceTest {
         assertEquals("gpt-4o-mini", chatRequestCaptor.getValue().model());
         assertEquals(1, chatRequestCaptor.getValue().messages().size());
         assertEquals("high", chatRequestCaptor.getValue().reasoningEffort());
+        assertEquals(1, chatRequestCaptor.getValue().tools().size());
         verify(messageService).createAssistantMessage(
                 conversation,
                 "world",

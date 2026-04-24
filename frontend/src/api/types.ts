@@ -25,7 +25,11 @@ export interface Message {
   id: string;
   role: MessageRole;
   content: string;
-  toolCalls: unknown;
+  toolCalls: Array<{
+    id: string;
+    name: string;
+    arguments: unknown;
+  }> | null;
   toolCallId: string | null;
   parentId: string | null;
   promptTokens: number | null;
@@ -71,7 +75,7 @@ export interface ChatCompletionPayload {
 }
 
 export interface SseEnvelope {
-  type: "start" | "delta" | "usage" | "done" | "error";
+  type: "start" | "delta" | "usage" | "done" | "error" | "tool_call" | "tool_result";
   messageId?: string | null;
   requestId?: string | null;
   content?: string | null;
@@ -80,6 +84,10 @@ export interface SseEnvelope {
   finishReason?: string | null;
   code?: string | null;
   message?: string | null;
+  toolCallId?: string | null;
+  toolName?: string | null;
+  toolArguments?: unknown;
+  toolResult?: string | null;
 }
 
 export interface ModelSpec {

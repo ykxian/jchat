@@ -887,3 +887,56 @@ curl -N http://localhost:8080/api/v1/chat/completions \
 - 本阶段按路线图收敛，未实现 NextChat JSON 导入导出
 - 当前搜索在 service 层做名称/标签过滤，数据规模较小时足够；后续如种子和用户自建规模显著增大，可再下推到更强的 DB 查询
 - 真实上游联调仍建议手工跑一轮，以确认不同 provider 在 mask 默认模型上的可用性
+
+---
+
+## Phase 11 进行中
+
+### 已完成的 calculator 子目标
+
+- 已新增 [/backend/src/main/java/com/jchat/plugin/Tool.java](/home/ykx/jchat/backend/src/main/java/com/jchat/plugin/Tool.java)
+- 已新增 [/backend/src/main/java/com/jchat/plugin/ToolContext.java](/home/ykx/jchat/backend/src/main/java/com/jchat/plugin/ToolContext.java)
+- 已新增 [/backend/src/main/java/com/jchat/plugin/ToolResult.java](/home/ykx/jchat/backend/src/main/java/com/jchat/plugin/ToolResult.java)
+- 已新增 [/backend/src/main/java/com/jchat/plugin/ToolRegistry.java](/home/ykx/jchat/backend/src/main/java/com/jchat/plugin/ToolRegistry.java)
+- 已新增 [/backend/src/main/java/com/jchat/plugin/ToolExecutor.java](/home/ykx/jchat/backend/src/main/java/com/jchat/plugin/ToolExecutor.java)
+- 已新增 [/backend/src/main/java/com/jchat/plugin/builtin/CalculatorTool.java](/home/ykx/jchat/backend/src/main/java/com/jchat/plugin/builtin/CalculatorTool.java)
+- 已更新 [/backend/src/main/java/com/jchat/chat/service/ChatService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/service/ChatService.java)
+- 已更新 [/backend/src/main/java/com/jchat/chat/service/PromptBuilder.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/service/PromptBuilder.java)
+- 已更新 [/backend/src/main/java/com/jchat/chat/dto/SseMessage.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/dto/SseMessage.java)
+- 已更新 [/backend/src/main/java/com/jchat/conversation/service/MessageService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/service/MessageService.java)
+- 已更新 [/backend/src/main/java/com/jchat/llm/dto/ChatChunk.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/dto/ChatChunk.java)
+- 已更新 [/backend/src/main/java/com/jchat/llm/dto/ChatMessage.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/dto/ChatMessage.java)
+- 已更新 [/backend/src/main/java/com/jchat/llm/dto/ChatRequest.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/dto/ChatRequest.java)
+- 已更新 [/backend/src/main/java/com/jchat/llm/openai/OpenAiCompatibleProvider.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/openai/OpenAiCompatibleProvider.java)
+- 已更新 [/backend/src/main/java/com/jchat/llm/openai/OpenAiRequest.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/openai/OpenAiRequest.java)
+- 已更新 [/frontend/src/api/types.ts](/home/ykx/jchat/frontend/src/api/types.ts)
+- 已更新 [/frontend/src/components/chat/MessageList.tsx](/home/ykx/jchat/frontend/src/components/chat/MessageList.tsx)
+- 已更新 [/frontend/src/pages/ChatPage.tsx](/home/ykx/jchat/frontend/src/pages/ChatPage.tsx)
+
+当前仓库已具备：
+
+- 最小工具基础设施：`Tool`、`ToolRegistry`、`ToolExecutor`
+- 内置 `calculator` 工具，可计算数学表达式
+- OpenAI-compatible 请求体已支持 tool schema，下游 SSE 已支持 `tool_call`
+- chat 主链已支持单轮 `tool_calls -> 执行 calculator -> 二次 completion`
+- assistant tool call 与 tool result 已持久化到 `messages`
+- 前端聊天页已能显示 `tool_call` 和 `tool_result` 的最小事件气泡
+
+### Phase 11 当前验证结果
+
+已完成验证：
+
+- `cd frontend && npm run build` 通过
+- `cd backend && ./gradlew --no-daemon test --tests com.jchat.llm.openai.OpenAiCompatibleProviderTest --tests com.jchat.chat.service.ChatServiceTest --tests com.jchat.chat.controller.ChatControllerTest --tests com.jchat.conversation.service.MessageServiceTest` 通过
+
+### 当前范围判断
+
+- 本轮只实现路线图建议顺序里的第一个子目标：`calculator`
+- `weather`、`http_fetch`、`web_search` 仍未开始
+- 仅为 `openai` provider 接入 tools；`anthropic` / `gemini` 仍保持文本流式模式
+
+### 下一步建议
+
+1. 先做一次真实上游手工联调，确认模型实际会发出 `calculator` tool call
+2. 如主链稳定，再继续 `weather`
+3. `http_fetch` 与 `web_search` 放到 calculator / weather 稳定后继续，不并行开

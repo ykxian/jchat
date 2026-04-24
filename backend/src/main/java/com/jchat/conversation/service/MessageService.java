@@ -1,6 +1,7 @@
 package com.jchat.conversation.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jchat.common.api.ApiException;
 import com.jchat.common.api.ErrorCode;
 import com.jchat.common.jpa.CursorPage;
@@ -25,15 +26,18 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final ConversationRepository conversationRepository;
     private final ConversationService conversationService;
+    private final ObjectMapper objectMapper;
 
     public MessageService(
             MessageRepository messageRepository,
             ConversationRepository conversationRepository,
-            ConversationService conversationService
+            ConversationService conversationService,
+            ObjectMapper objectMapper
     ) {
         this.messageRepository = messageRepository;
         this.conversationRepository = conversationRepository;
         this.conversationService = conversationService;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional(readOnly = true)
@@ -75,6 +79,7 @@ public class MessageService {
                 content,
                 null,
                 null,
+                null,
                 provider,
                 model,
                 null,
@@ -100,6 +105,7 @@ public class MessageService {
                 MessageRole.assistant,
                 content,
                 null,
+                null,
                 parentId,
                 provider,
                 model,
@@ -110,11 +116,61 @@ public class MessageService {
         );
     }
 
+    public Message createAssistantToolCallMessage(
+            Conversation conversation,
+            List<com.jchat.llm.dto.ChatMessage.ToolCall> toolCalls,
+            Long parentId,
+            String provider,
+            String model,
+            String requestId,
+            String finishReason
+    ) {
+        return save(
+                conversation,
+                MessageRole.assistant,
+                "",
+                objectMapper.valueToTree(toolCalls),
+                null,
+                parentId,
+                provider,
+                model,
+                requestId,
+                null,
+                null,
+                finishReason
+        );
+    }
+
+    public Message createToolMessage(
+            Conversation conversation,
+            String content,
+            String toolCallId,
+            String provider,
+            String model,
+            String requestId
+    ) {
+        return save(
+                conversation,
+                MessageRole.tool,
+                content,
+                null,
+                toolCallId,
+                null,
+                provider,
+                model,
+                requestId,
+                null,
+                null,
+                null
+        );
+    }
+
     private Message save(
             Conversation conversation,
             MessageRole role,
             String content,
             JsonNode toolCalls,
+            String toolCallId,
             Long parentId,
             String provider,
             String model,
@@ -132,6 +188,7 @@ public class MessageService {
         message.setRole(role);
         message.setContent(StringUtils.hasText(content) ? content.trim() : "");
         message.setToolCalls(toolCalls);
+        message.setToolCallId(StringUtils.hasText(toolCallId) ? toolCallId.trim() : null);
         message.setParentId(parentId);
         message.setProvider(StringUtils.hasText(provider) ? provider.trim() : null);
         message.setModel(StringUtils.hasText(model) ? model.trim() : null);
