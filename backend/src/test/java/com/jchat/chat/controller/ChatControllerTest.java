@@ -71,6 +71,7 @@ class ChatControllerTest {
                 1.0,
                 256,
                 null,
+                List.of(),
                 "high",
                 null
         );

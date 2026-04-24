@@ -15,6 +15,7 @@ public class AppProperties {
     private final Auth auth = new Auth();
     private final Crypto crypto = new Crypto();
     private final Chat chat = new Chat();
+    private final Files files = new Files();
     private final Llm llm = new Llm();
     private final Tools tools = new Tools();
 
@@ -48,6 +49,10 @@ public class AppProperties {
 
     public Chat getChat() {
         return chat;
+    }
+
+    public Files getFiles() {
+        return files;
     }
 
     public Llm getLlm() {
@@ -154,6 +159,55 @@ public class AppProperties {
 
         public void setDefaultProvider(String defaultProvider) {
             this.defaultProvider = defaultProvider;
+        }
+    }
+
+    public static class Files {
+
+        private String root = "./data/files";
+        private DataSize maxUploadSize = DataSize.ofMegabytes(50);
+        private int uploadLimitPerHour = 10;
+        private int referenceTokenBudget = 4000;
+        private int maxExtractedChars = 50000;
+
+        public String getRoot() {
+            return root;
+        }
+
+        public void setRoot(String root) {
+            this.root = root;
+        }
+
+        public DataSize getMaxUploadSize() {
+            return maxUploadSize;
+        }
+
+        public void setMaxUploadSize(DataSize maxUploadSize) {
+            this.maxUploadSize = maxUploadSize;
+        }
+
+        public int getUploadLimitPerHour() {
+            return uploadLimitPerHour;
+        }
+
+        public void setUploadLimitPerHour(int uploadLimitPerHour) {
+            this.uploadLimitPerHour = uploadLimitPerHour;
+        }
+
+        public int getReferenceTokenBudget() {
+            return referenceTokenBudget;
+        }
+
+        public void setReferenceTokenBudget(int referenceTokenBudget) {
+            this.referenceTokenBudget = referenceTokenBudget;
+        }
+
+        public int getMaxExtractedChars() {
+            return maxExtractedChars;
+        }
+
+        public void setMaxExtractedChars(int maxExtractedChars) {
+            this.maxExtractedChars = maxExtractedChars;
         }
     }
 

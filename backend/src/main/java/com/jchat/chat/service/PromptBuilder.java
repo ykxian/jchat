@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.jchat.conversation.entity.Conversation;
 import com.jchat.conversation.entity.Message;
 import com.jchat.conversation.entity.MessageRole;
+import com.jchat.file.service.FileService;
 import com.jchat.llm.dto.ChatMessage;
 import com.jchat.mask.entity.Mask;
 import java.util.ArrayList;
@@ -14,7 +15,13 @@ import org.springframework.util.StringUtils;
 @Component
 public class PromptBuilder {
 
-    public List<ChatMessage> build(Conversation conversation, Mask mask, List<Message> history) {
+    private final FileService fileService;
+
+    public PromptBuilder(FileService fileService) {
+        this.fileService = fileService;
+    }
+
+    public List<ChatMessage> build(Conversation conversation, Mask mask, List<Message> history, List<Long> fileIds) {
         List<ChatMessage> prompt = new ArrayList<>();
 
         if (StringUtils.hasText(conversation.getSystemPrompt())) {
@@ -23,6 +30,15 @@ public class PromptBuilder {
 
         if (mask != null && StringUtils.hasText(mask.getSystemPrompt())) {
             prompt.add(ChatMessage.system(mask.getSystemPrompt().trim()));
+        }
+
+        String referenceContext = fileService.buildReferenceContext(
+                conversation.getUserId(),
+                fileIds,
+                fileService.getReferenceTokenBudget()
+        );
+        if (StringUtils.hasText(referenceContext)) {
+            prompt.add(ChatMessage.system(referenceContext));
         }
 
         for (Message message : history) {

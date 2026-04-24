@@ -24,6 +24,10 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: ${STORAGE_MAX_UPLOAD_SIZE:50MB}
+      max-request-size: ${STORAGE_MAX_UPLOAD_SIZE:50MB}
 
 server:
   port: ${SERVER_PORT:8080}
@@ -64,6 +68,12 @@ app:
     key: ${APP_CRYPTO_KEY:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
   chat:
     default-provider: ${CHAT_DEFAULT_PROVIDER:openai}
+  files:
+    root: ${STORAGE_ROOT:./data/files}
+    max-upload-size: ${STORAGE_MAX_UPLOAD_SIZE:50MB}
+    upload-limit-per-hour: ${FILE_UPLOAD_LIMIT_PER_HOUR:10}
+    reference-token-budget: ${FILE_REFERENCE_TOKEN_BUDGET:4000}
+    max-extracted-chars: ${FILE_MAX_EXTRACTED_CHARS:50000}
   llm:
     max-connections: 200
     pending-acquire-timeout: 10s

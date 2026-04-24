@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
-import type { Message } from "../../api/types";
+import type { FileRecord, Message } from "../../api/types";
 
 interface MessageListProps {
+  filesById?: Record<string, FileRecord>;
   isLoading: boolean;
   messages: Message[];
 }
@@ -10,7 +11,7 @@ function getEmptyLabel(isLoading: boolean) {
   return isLoading ? "Loading message history..." : "Send the first message to start this conversation.";
 }
 
-export function MessageList({ isLoading, messages }: MessageListProps) {
+export function MessageList({ filesById = {}, isLoading, messages }: MessageListProps) {
   const endRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -58,6 +59,18 @@ export function MessageList({ isLoading, messages }: MessageListProps) {
               message.content || " "
             )}
           </div>
+          {message.fileIds.length ? (
+            <div className="message-bubble__attachments">
+              {message.fileIds.map((fileId) => {
+                const file = filesById[fileId];
+                return (
+                  <span className="message-attachment" key={fileId}>
+                    {file?.filename ?? `File #${fileId}`}
+                  </span>
+                );
+              })}
+            </div>
+          ) : null}
         </article>
       ))}
       <div ref={endRef} />

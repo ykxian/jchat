@@ -9,6 +9,8 @@ import com.jchat.conversation.entity.Message;
 import com.jchat.conversation.entity.MessageRole;
 import com.jchat.conversation.repository.ConversationRepository;
 import com.jchat.conversation.repository.MessageRepository;
+import com.jchat.file.repository.MessageFileRepository;
+import com.jchat.file.service.FileService;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,11 +38,24 @@ class MessageServiceTest {
     @Mock
     private ConversationService conversationService;
 
+    @Mock
+    private MessageFileRepository messageFileRepository;
+
+    @Mock
+    private FileService fileService;
+
     private MessageService messageService;
 
     @BeforeEach
     void setUp() {
-        messageService = new MessageService(messageRepository, conversationRepository, conversationService, new ObjectMapper());
+        messageService = new MessageService(
+                messageRepository,
+                conversationRepository,
+                conversationService,
+                messageFileRepository,
+                fileService,
+                new ObjectMapper()
+        );
     }
 
     @Test

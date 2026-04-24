@@ -3,9 +3,17 @@ import { useNavigate, useParams } from "react-router-dom";
 import { apiKeysApi } from "../api/apiKeys";
 import { streamChatCompletion } from "../api/chat";
 import { conversationsApi } from "../api/conversations";
+import { filesApi } from "../api/files";
 import { masksApi } from "../api/masks";
 import { providersApi } from "../api/providers";
-import type { ApiKeyRecord, Conversation, Mask, Message, ProviderInfo } from "../api/types";
+import type {
+  ApiKeyRecord,
+  Conversation,
+  FileRecord,
+  Mask,
+  Message,
+  ProviderInfo
+} from "../api/types";
 import { Composer } from "../components/chat/Composer";
 import { MessageList } from "../components/chat/MessageList";
 import { StreamingMessage } from "../components/chat/StreamingMessage";
@@ -24,12 +32,12 @@ const REASONING_EFFORT_OPTIONS = [
   { label: "High", value: "high" }
 ] as const;
 
-function buildDraftMessage(content: string): Message {
+function buildDraftMessage(content: string, fileIds: string[] = []): Message {
   return {
     completionTokens: null,
     content,
     createdAt: new Date().toISOString(),
-    fileIds: [],
+    fileIds,
     id: `draft-user-${crypto.randomUUID()}`,
     parentId: null,
     promptTokens: null,
@@ -112,6 +120,9 @@ export function ChatPage() {
   const [selectedApiKeyId, setSelectedApiKeyId] = useState<string>("");
   const [selectedMaskId, setSelectedMaskId] = useState("");
   const [modelDraft, setModelDraft] = useState("");
+  const [attachments, setAttachments] = useState<FileRecord[]>([]);
+  const [filesById, setFilesById] = useState<Record<string, FileRecord>>({});
+  const [isUploading, setIsUploading] = useState(false);
   const conversations = useConversationStore((state) => state.items);
   const currentId = useConversationStore((state) => state.currentId);
   const messagesByConversation = useConversationStore((state) => state.messagesByConversation);
@@ -130,6 +141,7 @@ export function ChatPage() {
     apiKeys.find((apiKey) => apiKey.id === selectedApiKeyId && apiKey.provider === currentConversation?.provider) ??
     null;
   const currentMask = masks.find((mask) => mask.id === (currentConversation?.maskId ?? "")) ?? null;
+  const hasPendingAttachments = attachments.some((attachment) => attachment.status !== "ready");
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -263,9 +275,10 @@ export function ChatPage() {
       }
 
       try {
-        const [conversation, messagePage] = await Promise.all([
+        const [conversation, messagePage, filesPage] = await Promise.all([
           conversationsApi.get(targetConversationId),
-          conversationsApi.listMessages(targetConversationId)
+          conversationsApi.listMessages(targetConversationId),
+          filesApi.list(targetConversationId)
         ]);
 
         if (cancelled) {
@@ -274,6 +287,9 @@ export function ChatPage() {
 
         conversationStore.upsertConversation(conversation);
         conversationStore.setMessages(targetConversationId, messagePage.items);
+        setFilesById(
+          Object.fromEntries(filesPage.items.map((file) => [file.id, file]))
+        );
         await Promise.all([
           chatCache.upsertConversation(activeUserId, conversation),
           chatCache.replaceMessages(activeUserId, targetConversationId, messagePage.items)
@@ -296,6 +312,56 @@ export function ChatPage() {
       cancelled = true;
     };
   }, [conversationId, userId]);
+
+  useEffect(() => {
+    if (!currentId) {
+      setAttachments([]);
+      return;
+    }
+
+    setAttachments((current) =>
+      current.filter((attachment) => attachment.conversationId === currentId)
+    );
+  }, [currentId]);
+
+  useEffect(() => {
+    if (!attachments.some((attachment) => attachment.status === "processing")) {
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setInterval(() => {
+      void Promise.all(
+        attachments
+          .filter((attachment) => attachment.status === "processing")
+          .map((attachment) => filesApi.get(attachment.id))
+      )
+        .then((items) => {
+          if (cancelled || !items.length) {
+            return;
+          }
+
+          setAttachments((current) =>
+            current.map((attachment) => {
+              const next = items.find((item) => item.id === attachment.id);
+              return next ?? attachment;
+            })
+          );
+          setFilesById((current) => ({
+            ...current,
+            ...Object.fromEntries(items.map((item) => [item.id, item]))
+          }));
+        })
+        .catch(() => {
+          // Keep the last visible status and retry on the next interval tick.
+        });
+    }, 1500);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [attachments]);
 
   useEffect(() => {
     if (!currentProviderInfo) {
@@ -357,16 +423,72 @@ export function ChatPage() {
     }
 
     const activeUserId = userId;
-    const [conversation, messagePage] = await Promise.all([
+    const [conversation, messagePage, filesPage] = await Promise.all([
       conversationsApi.get(targetConversationId),
-      conversationsApi.listMessages(targetConversationId)
+      conversationsApi.listMessages(targetConversationId),
+      filesApi.list(targetConversationId)
     ]);
     conversationStore.upsertConversation(conversation);
     conversationStore.setMessages(targetConversationId, messagePage.items);
+    setFilesById(
+      Object.fromEntries(filesPage.items.map((file) => [file.id, file]))
+    );
     await Promise.all([
       chatCache.upsertConversation(activeUserId, conversation),
       chatCache.replaceMessages(activeUserId, targetConversationId, messagePage.items)
     ]);
+  }
+
+  async function ensureConversationForAttachment() {
+    if (currentId) {
+      return currentId;
+    }
+
+    if (!userId) {
+      throw new Error("Session expired. Please sign in again.");
+    }
+
+    const defaults = getDefaultSelection(providers);
+    const selectedMask = getMask(selectedMaskId || null);
+    const conversation = await conversationsApi.create({
+      maskId: selectedMask?.id ?? null,
+      model: selectedMask?.defaultModel ?? defaults.model,
+      provider: selectedMask?.defaultProvider ?? defaults.provider,
+      title: null
+    });
+    conversationStore.upsertConversation(conversation);
+    await chatCache.upsertConversation(userId, conversation);
+    navigate(`/chat/${conversation.id}`);
+    return conversation.id;
+  }
+
+  async function handleUploadFiles(files: File[]) {
+    if (!isOnline) {
+      setPageError("Reconnect before uploading attachments.");
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      const targetConversationId = await ensureConversationForAttachment();
+      const uploaded = await Promise.all(
+        files.map((file) => filesApi.upload(file, targetConversationId))
+      );
+      setAttachments((current) => [...current, ...uploaded]);
+      setFilesById((current) => ({
+        ...current,
+        ...Object.fromEntries(uploaded.map((file) => [file.id, file]))
+      }));
+      setPageError(null);
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : "Failed to upload attachments");
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  function handleRemoveAttachment(fileId: string) {
+    setAttachments((current) => current.filter((file) => file.id !== fileId));
   }
 
   async function handleSendMessage(content: string) {
@@ -403,7 +525,8 @@ export function ChatPage() {
         return;
       }
 
-      const userMessage = buildDraftMessage(content);
+      const selectedFileIds = attachments.map((attachment) => attachment.id);
+      const userMessage = buildDraftMessage(content, selectedFileIds);
       const assistantDraft = buildAssistantDraft();
       const abortController = new AbortController();
       conversationStore.addMessage(targetConversationId, userMessage);
@@ -419,6 +542,7 @@ export function ChatPage() {
           maskId: currentConversation?.maskId ?? null,
           model: currentConversation?.model ?? DEFAULT_MODEL,
           provider: currentConversation?.provider ?? DEFAULT_PROVIDER,
+          fileIds: selectedFileIds,
           reasoningEffort: currentConversation?.reasoningEffort ?? null,
           temperature: 0.7,
           topP: 1
@@ -477,6 +601,7 @@ export function ChatPage() {
 
       streamStore.finish();
       await syncConversationMessages(targetConversationId);
+      setAttachments([]);
       streamStore.clear();
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
@@ -696,14 +821,23 @@ export function ChatPage() {
 
         <StreamingMessage error={stream?.error ?? null} isStreaming={Boolean(isStreamingCurrent)} />
 
-        <MessageList isLoading={Boolean(conversationId && isLoadingMessages)} messages={messages} />
+        <MessageList
+          filesById={filesById}
+          isLoading={Boolean(conversationId && isLoadingMessages)}
+          messages={messages}
+        />
 
         <Composer
+          attachments={attachments}
           disabled={Boolean(conversationId && isLoadingMessages)}
           isOffline={!isOnline}
           isStreaming={Boolean(isStreamingCurrent)}
+          isUploading={isUploading}
+          isWaitingForAttachments={hasPendingAttachments}
           onAbort={handleAbort}
+          onRemoveAttachment={handleRemoveAttachment}
           onSubmit={handleSendMessage}
+          onUploadFiles={handleUploadFiles}
         />
       </section>
     </div>

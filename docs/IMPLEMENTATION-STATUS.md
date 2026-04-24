@@ -7,7 +7,7 @@
 ## Current Stage
 
 - 当前目标：`Phase 12`
-- 当前状态：`Phase 11 已完成，可开始`
+- 当前状态：`Phase 12 已完成`
 - 最后更新：`2026-04-24`
 
 ---
@@ -949,3 +949,79 @@ curl -N http://localhost:8080/api/v1/chat/completions \
 1. 若继续严格扩 `Phase 11`，下一项是 `anthropic` / `gemini` 的 tools 适配层
 2. 若按路线图主路径前进，可进入 `Phase 12` 文件上传与轻量 RAG
 3. 前端如果要补设置页工具清单，现在可以直接消费 `/api/v1/plugins`
+
+---
+
+## Phase 12 已完成文件上传与轻量 RAG
+
+### 本轮新增 / 更新
+
+- 已新增 [/backend/src/main/resources/db/migration/V6__files_and_attachments.sql](/home/ykx/jchat/backend/src/main/resources/db/migration/V6__files_and_attachments.sql)
+- 已新增 [/backend/src/main/java/com/jchat/file/controller/FileController.java](/home/ykx/jchat/backend/src/main/java/com/jchat/file/controller/FileController.java)
+- 已新增 [/backend/src/main/java/com/jchat/file/service/FileService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/file/service/FileService.java)
+- 已新增 [/backend/src/main/java/com/jchat/file/service/FileStorageService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/file/service/FileStorageService.java)
+- 已新增 [/backend/src/main/java/com/jchat/file/service/FileTextExtractor.java](/home/ykx/jchat/backend/src/main/java/com/jchat/file/service/FileTextExtractor.java)
+- 已新增 [/backend/src/main/java/com/jchat/file/entity/FileEntity.java](/home/ykx/jchat/backend/src/main/java/com/jchat/file/entity/FileEntity.java)
+- 已新增 [/backend/src/main/java/com/jchat/file/entity/MessageFile.java](/home/ykx/jchat/backend/src/main/java/com/jchat/file/entity/MessageFile.java)
+- 已新增 [/backend/src/main/java/com/jchat/file/repository/FileRepository.java](/home/ykx/jchat/backend/src/main/java/com/jchat/file/repository/FileRepository.java)
+- 已新增 [/backend/src/main/java/com/jchat/file/repository/MessageFileRepository.java](/home/ykx/jchat/backend/src/main/java/com/jchat/file/repository/MessageFileRepository.java)
+- 已新增 [/backend/src/main/java/com/jchat/file/dto/FileResponse.java](/home/ykx/jchat/backend/src/main/java/com/jchat/file/dto/FileResponse.java)
+- 已新增 [/backend/src/test/java/com/jchat/file/controller/FileControllerTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/file/controller/FileControllerTest.java)
+- 已新增 [/backend/src/test/java/com/jchat/file/service/FileServiceTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/file/service/FileServiceTest.java)
+- 已新增 [/frontend/src/api/files.ts](/home/ykx/jchat/frontend/src/api/files.ts)
+- 已更新 [/backend/src/main/java/com/jchat/chat/dto/ChatCompletionRequest.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/dto/ChatCompletionRequest.java)
+- 已更新 [/backend/src/main/java/com/jchat/chat/service/ChatService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/service/ChatService.java)
+- 已更新 [/backend/src/main/java/com/jchat/chat/service/PromptBuilder.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/service/PromptBuilder.java)
+- 已更新 [/backend/src/main/java/com/jchat/conversation/service/MessageService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/service/MessageService.java)
+- 已更新 [/backend/src/main/java/com/jchat/conversation/dto/MessageResponse.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/dto/MessageResponse.java)
+- 已更新 [/backend/src/main/java/com/jchat/config/AppProperties.java](/home/ykx/jchat/backend/src/main/java/com/jchat/config/AppProperties.java)
+- 已更新 [/backend/src/main/resources/application.yml](/home/ykx/jchat/backend/src/main/resources/application.yml)
+- 已更新 [/backend/build.gradle.kts](/home/ykx/jchat/backend/build.gradle.kts)
+- 已更新 [/frontend/src/api/types.ts](/home/ykx/jchat/frontend/src/api/types.ts)
+- 已更新 [/frontend/src/components/chat/Composer.tsx](/home/ykx/jchat/frontend/src/components/chat/Composer.tsx)
+- 已更新 [/frontend/src/components/chat/MessageList.tsx](/home/ykx/jchat/frontend/src/components/chat/MessageList.tsx)
+- 已更新 [/frontend/src/pages/ChatPage.tsx](/home/ykx/jchat/frontend/src/pages/ChatPage.tsx)
+- 已更新 [/frontend/src/styles/globals.css](/home/ykx/jchat/frontend/src/styles/globals.css)
+
+当前仓库已具备：
+
+- `files` / `message_files` 数据表与 JPA 持久化模型
+- `/api/v1/files` 上传、列表、详情、下载、删除接口
+- 本地文件系统存储与 `sha256` 去重
+- 基于 Apache Tika 的异步文本抽取，状态覆盖 `processing` / `ready` / `failed`
+- `ChatCompletionRequest.fileIds` 与消息附件关联持久化
+- `PromptBuilder` 轻量参考资料注入，不引入向量检索
+- 前端聊天页上传附件、发送时携带附件、消息气泡显示附件名
+- 已补齐文件抽取竞态修复：上传事务提交后再触发异步抽取
+- 已补齐去重自愈逻辑：命中旧 `processing` / `failed` 文件时会重新调度抽取
+- 已补齐前端发送保护：附件未 `ready` 前不允许发送消息
+
+### Phase 12 验证结果
+
+已完成验证：
+
+- `cd backend && ./gradlew test` 通过
+- `cd frontend && npm run build` 通过
+- 后端新增测试已覆盖：
+  - `FileController` 上传、列表、下载、删除
+  - `FileService` 去重、列表分页、参考上下文构建
+- 真实联调已验证 txt 文件主链
+  - 使用上游 `http://ykxcodex.bbroot.com:7860/v1`
+  - 模型 `qwen3.6-plus`
+  - 上传 `reference.txt` 后等待状态变为 `ready`
+  - 发送带 `fileIds` 的消息，模型正确回复文件中的答案码 `BLUE-WHALE-42`
+- 真实联调已验证重复上传同内容文件
+  - 首次上传返回 `processing`，随后自动变为 `ready`
+  - 再次上传相同内容时复用原文件记录，并保持 `ready`
+
+### 当前范围判断
+
+- 本阶段只实现轻量文件链路：上传、抽文本、注入 prompt、消息附件展示
+- 未实现向量检索、embedding、chunking、独立 files 页面
+- 文件抽取失败不会阻塞 chat 主链；仅跳过参考资料注入
+
+### 下一步建议
+
+1. 进入 `Phase 13`，补齐 PWA 与生产部署
+2. 若要增强文件能力，下一步应优先补真实联调验证：上传 PDF/DOCX 后提问并观察 prompt 注入效果
+3. 向量检索、embedding、文件管理页应留到后续阶段，不要并入当前 Phase 12

@@ -17,7 +17,7 @@ public record MessageResponse(
         String createdAt
 ) {
 
-    public static MessageResponse from(Message message) {
+    public static MessageResponse from(Message message, List<String> fileIds) {
         return new MessageResponse(
                 String.valueOf(message.getId()),
                 message.getRole() == null ? null : message.getRole().name(),
@@ -27,7 +27,7 @@ public record MessageResponse(
                 message.getParentId() == null ? null : String.valueOf(message.getParentId()),
                 message.getPromptTokens(),
                 message.getCompletionTokens(),
-                List.of(),
+                fileIds,
                 message.getCreatedAt() == null ? null : message.getCreatedAt().toString()
         );
     }

@@ -70,8 +70,21 @@ export interface ChatCompletionPayload {
   topP?: number;
   maxTokens?: number | null;
   maskId?: string | null;
+  fileIds?: string[];
   reasoningEffort?: "low" | "medium" | "high" | null;
   apiKeyId?: string | null;
+}
+
+export interface FileRecord {
+  id: string;
+  conversationId: string | null;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  sha256: string;
+  status: "processing" | "ready" | "failed";
+  errorMessage: string | null;
+  createdAt: string | null;
 }
 
 export interface SseEnvelope {

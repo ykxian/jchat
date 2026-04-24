@@ -25,6 +25,7 @@ import com.jchat.plugin.ToolRegistry;
 import com.jchat.plugin.ToolResult;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -87,12 +88,13 @@ public class ChatService {
 
         String providerName = normalizeProvider(request.provider(), conversation.getProvider());
         String modelName = normalizeModel(request.model(), conversation.getModel());
+        List<Long> fileIds = parseIds(request.fileIds(), "fileIds");
         LlmProvider provider = llmProviderRegistry.get(providerName);
         conversationService.updateModelSelection(conversation, providerName, modelName);
         Mask mask = resolveMask(userId, request.maskId(), conversation);
 
         List<ChatCompletionMessage> newMessages = normalizeNewMessages(request.messages());
-        Message userMessage = persistLatestUserMessage(conversation, newMessages, providerName, modelName);
+        Message userMessage = persistLatestUserMessage(conversation, newMessages, providerName, modelName, userId, fileIds);
         Long apiKeyId = parseNullableId(request.apiKeyId(), "apiKeyId");
         ApiKeyService.ResolvedApiKey resolvedApiKey = apiKeyService.resolveForChat(userId, providerName, apiKeyId);
 
@@ -134,7 +136,8 @@ public class ChatService {
                 requestId,
                 emitter,
                 closed,
-                activeStream
+                activeStream,
+                fileIds
         ));
 
         return emitter;
@@ -153,12 +156,13 @@ public class ChatService {
             String requestId,
             SseEmitter emitter,
             AtomicBoolean closed,
-            AtomicReference<Disposable> activeStream
+            AtomicReference<Disposable> activeStream,
+            List<Long> fileIds
     ) {
         try {
             CompletionResult firstPass = executeProviderRound(
                     provider,
-                    buildChatRequest(conversation, mask, messageService.listEntities(conversation.getId()), request, providerName),
+                    buildChatRequest(conversation, mask, messageService.listEntities(conversation.getId()), request, providerName, fileIds),
                     resolvedApiKey,
                     requestId,
                     emitter,
@@ -182,7 +186,8 @@ public class ChatService {
                         emitter,
                         closed,
                         activeStream,
-                        firstPass
+                        firstPass,
+                        fileIds
                 );
                 return;
             }
@@ -211,7 +216,8 @@ public class ChatService {
             SseEmitter emitter,
             AtomicBoolean closed,
             AtomicReference<Disposable> activeStream,
-            CompletionResult firstPass
+            CompletionResult firstPass,
+            List<Long> fileIds
     ) throws IOException, InterruptedException {
         messageService.createAssistantToolCallMessage(
                 conversation,
@@ -242,7 +248,7 @@ public class ChatService {
 
         CompletionResult secondPass = executeProviderRound(
                 provider,
-                buildChatRequest(conversation, mask, messageService.listEntities(conversation.getId()), request, providerName),
+                buildChatRequest(conversation, mask, messageService.listEntities(conversation.getId()), request, providerName, fileIds),
                 resolvedApiKey,
                 requestId,
                 emitter,
@@ -374,7 +380,8 @@ public class ChatService {
             Mask mask,
             List<Message> history,
             ChatCompletionRequest request,
-            String providerName
+            String providerName,
+            List<Long> fileIds
     ) {
         List<ChatRequest.ToolSpec> tools = "openai".equals(providerName) ? toolRegistry.listEnabledToolSpecs() : null;
         if (tools != null && tools.isEmpty()) {
@@ -383,7 +390,7 @@ public class ChatService {
 
         return new ChatRequest(
                 normalizeModel(request.model(), conversation.getModel()),
-                promptBuilder.build(conversation, mask, history),
+                promptBuilder.build(conversation, mask, history, fileIds),
                 request.temperature(),
                 request.topP(),
                 request.maxTokens(),
@@ -396,13 +403,15 @@ public class ChatService {
             Conversation conversation,
             List<ChatCompletionMessage> newMessages,
             String providerName,
-            String modelName
+            String modelName,
+            Long userId,
+            List<Long> fileIds
     ) {
         ChatCompletionMessage latest = newMessages.get(newMessages.size() - 1);
         if (!"user".equals(latest.role().trim().toLowerCase())) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED, "Last message must have role user");
         }
-        return messageService.createUserMessage(conversation, latest.content(), providerName, modelName);
+        return messageService.createUserMessage(conversation, latest.content(), providerName, modelName, userId, fileIds);
     }
 
     private void handleFailure(SseEmitter emitter, AtomicBoolean closed, Exception exception) {
@@ -504,6 +513,22 @@ public class ChatService {
         } catch (NumberFormatException ex) {
             throw new ApiException(ErrorCode.VALIDATION_FAILED, fieldName + " must be a numeric string");
         }
+    }
+
+    private List<Long> parseIds(List<String> rawIds, String fieldName) {
+        if (rawIds == null || rawIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> ids = new ArrayList<>();
+        Set<Long> seen = new LinkedHashSet<>();
+        for (String rawId : rawIds) {
+            Long id = parseRequiredId(rawId, fieldName);
+            if (seen.add(id)) {
+                ids.add(id);
+            }
+        }
+        return ids;
     }
 
     private void dispose(AtomicReference<Disposable> streamRef) {

@@ -34,6 +34,8 @@ dependencies {
     implementation("org.postgresql:postgresql")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
     implementation("net.objecthunter:exp4j:0.4.8")
+    implementation("org.apache.tika:tika-core:3.2.1")
+    implementation("org.apache.tika:tika-parsers-standard-package:3.2.1")
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 

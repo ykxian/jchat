@@ -12,8 +12,13 @@ import com.jchat.conversation.entity.Message;
 import com.jchat.conversation.entity.MessageRole;
 import com.jchat.conversation.repository.ConversationRepository;
 import com.jchat.conversation.repository.MessageRepository;
+import com.jchat.file.repository.MessageFileRepository;
+import com.jchat.file.service.FileService;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,17 +31,23 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final ConversationRepository conversationRepository;
     private final ConversationService conversationService;
+    private final MessageFileRepository messageFileRepository;
+    private final FileService fileService;
     private final ObjectMapper objectMapper;
 
     public MessageService(
             MessageRepository messageRepository,
             ConversationRepository conversationRepository,
             ConversationService conversationService,
+            MessageFileRepository messageFileRepository,
+            FileService fileService,
             ObjectMapper objectMapper
     ) {
         this.messageRepository = messageRepository;
         this.conversationRepository = conversationRepository;
         this.conversationService = conversationService;
+        this.messageFileRepository = messageFileRepository;
+        this.fileService = fileService;
         this.objectMapper = objectMapper;
     }
 
@@ -60,9 +71,15 @@ public class MessageService {
         boolean hasNext = messages.size() > limit;
         List<Message> pageItems = hasNext ? messages.subList(0, limit) : messages;
         String nextCursor = hasNext ? encodeCursor(pageItems.get(pageItems.size() - 1)) : null;
+        Map<Long, List<String>> fileIdsByMessageId = resolveFileIdsByMessageId(pageItems);
 
         return new CursorPage<>(
-                pageItems.stream().map(MessageResponse::from).toList(),
+                pageItems.stream()
+                        .map(message -> MessageResponse.from(
+                                message,
+                                fileIdsByMessageId.getOrDefault(message.getId(), List.of())
+                        ))
+                        .toList(),
                 nextCursor
         );
     }
@@ -73,7 +90,18 @@ public class MessageService {
     }
 
     public Message createUserMessage(Conversation conversation, String content, String provider, String model) {
-        return save(
+        return createUserMessage(conversation, content, provider, model, conversation.getUserId(), List.of());
+    }
+
+    public Message createUserMessage(
+            Conversation conversation,
+            String content,
+            String provider,
+            String model,
+            Long userId,
+            List<Long> fileIds
+    ) {
+        Message saved = save(
                 conversation,
                 MessageRole.user,
                 content,
@@ -87,6 +115,8 @@ public class MessageService {
                 null,
                 null
         );
+        fileService.attachFilesToMessage(userId, conversation.getId(), saved.getId(), fileIds);
+        return saved;
     }
 
     public Message createAssistantMessage(
@@ -223,5 +253,19 @@ public class MessageService {
 
     private String encodeCursor(Message message) {
         return InstantIdCursor.encode(message.getCreatedAt(), message.getId());
+    }
+
+    private Map<Long, List<String>> resolveFileIdsByMessageId(List<Message> messages) {
+        if (messages.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, List<String>> result = new LinkedHashMap<>();
+        messageFileRepository.findAllByMessageIdInOrderByMessageIdAscPositionAsc(
+                messages.stream().map(Message::getId).toList()
+        ).forEach(messageFile -> result
+                .computeIfAbsent(messageFile.getMessageId(), ignored -> new ArrayList<>())
+                .add(String.valueOf(messageFile.getFileId())));
+        return result;
     }
 }

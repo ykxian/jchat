@@ -104,9 +104,17 @@ class ChatServiceTest {
         when(conversationService.requireConversation(7L, 42L)).thenReturn(conversation);
         when(conversationService.updateModelSelection(conversation, "openai", "gpt-4o-mini")).thenReturn(conversation);
         when(llmProviderRegistry.get("openai")).thenReturn(llmProvider);
-        when(messageService.createUserMessage(conversation, "hello", "openai", "gpt-4o-mini")).thenReturn(userMessage);
+        when(messageService.createUserMessage(
+                conversation,
+                "hello",
+                "openai",
+                "gpt-4o-mini",
+                7L,
+                List.of()
+        )).thenReturn(userMessage);
         when(messageService.listEntities(42L)).thenReturn(List.of(userMessage));
-        when(promptBuilder.build(conversation, null, List.of(userMessage))).thenReturn(List.of(ChatMessage.user("hello")));
+        when(promptBuilder.build(conversation, null, List.of(userMessage), List.of()))
+                .thenReturn(List.of(ChatMessage.user("hello")));
         when(toolRegistry.listEnabledToolSpecs()).thenReturn(List.of(new ChatRequest.ToolSpec(
                 "calculator",
                 "Evaluate a math expression. Supports +, -, *, /, ^, sqrt, sin, cos, etc.",
@@ -141,6 +149,7 @@ class ChatServiceTest {
                 1.0,
                 256,
                 null,
+                List.of(),
                 "high",
                 null
         ));
@@ -177,9 +186,17 @@ class ChatServiceTest {
         when(conversationService.requireConversation(7L, 42L)).thenReturn(conversation);
         when(conversationService.updateModelSelection(conversation, "openai", "gpt-4o-mini")).thenReturn(conversation);
         when(llmProviderRegistry.get("openai")).thenReturn(llmProvider);
-        when(messageService.createUserMessage(conversation, "hello", "openai", "gpt-4o-mini")).thenReturn(userMessage);
+        when(messageService.createUserMessage(
+                conversation,
+                "hello",
+                "openai",
+                "gpt-4o-mini",
+                7L,
+                List.of()
+        )).thenReturn(userMessage);
         when(messageService.listEntities(42L)).thenReturn(List.of(userMessage));
-        when(promptBuilder.build(conversation, null, List.of(userMessage))).thenReturn(List.of(ChatMessage.user("hello")));
+        when(promptBuilder.build(conversation, null, List.of(userMessage), List.of()))
+                .thenReturn(List.of(ChatMessage.user("hello")));
         when(toolRegistry.listEnabledToolSpecs()).thenReturn(List.of(new ChatRequest.ToolSpec(
                 "calculator",
                 "Evaluate a math expression. Supports +, -, *, /, ^, sqrt, sin, cos, etc.",
@@ -199,6 +216,7 @@ class ChatServiceTest {
                 null,
                 null,
                 null,
+                List.of(),
                 null,
                 null
         ));

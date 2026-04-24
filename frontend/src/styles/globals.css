@@ -684,6 +684,46 @@ code {
   word-break: break-word;
 }
 
+.message-bubble__attachments,
+.composer__attachments {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.message-attachment,
+.composer__attachment {
+  border: 1px solid rgba(247, 242, 234, 0.12);
+  border-radius: 14px;
+  background: rgba(247, 242, 234, 0.04);
+}
+
+.message-attachment {
+  display: inline-flex;
+  width: fit-content;
+  padding: 8px 12px;
+  margin-right: 8px;
+  color: rgba(247, 242, 234, 0.78);
+}
+
+.composer__attachment {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.composer__attachment strong,
+.composer__attachment span {
+  display: block;
+}
+
+.composer__attachment span {
+  color: rgba(247, 242, 234, 0.62);
+  font-size: 0.9rem;
+}
+
 .composer {
   display: grid;
   gap: 14px;
