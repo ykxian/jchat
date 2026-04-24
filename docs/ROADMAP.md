@@ -129,24 +129,26 @@
 **目标**：LLM 能调用 4 个内置工具；用户能上传 PDF/DOCX 让 LLM 引用。
 
 ### 任务
-- [ ] `Tool` 接口 + `ToolExecutor` + `ToolRegistry`
+- [x] `Tool` 接口 + `ToolExecutor` + `ToolRegistry`
 - [ ] 内置工具：
-  - [ ] `CalculatorTool`（exp4j）
-  - [ ] `WeatherTool`（Open-Meteo，无 key）
-  - [ ] `HttpFetchTool`（WebClient + jsoup，白名单从 env 读）
-  - [ ] `WebSearchTool`（SerpAPI；无 key 时禁用不报错）
+  - [x] `CalculatorTool`（exp4j）
+  - [x] `WeatherTool`（Open-Meteo，无 key）
+  - [x] `HttpFetchTool`（WebClient + jsoup，白名单从 env 读）
+  - [x] `WebSearchTool`（当前实现使用 Bing RSS；无额外 key）
 - [ ] 三 provider 各自的 tool 格式翻译层
-- [ ] `ChatService` 工具调用 roundtrip：识别 tool_call → 执行 → 塞入 context → 再次请求
-- [ ] 工具执行超时（10s）+ 限流（5/min/user/tool）
+- [x] `ChatService` 工具调用 roundtrip：识别 tool_call → 执行 → 塞入 context → 再次请求
+- [x] 工具执行超时（10s）+ 限流（5/min/user/tool）
 - [ ] Flyway V3：`files`、`message_files`
 - [ ] `FileService`：上传、sha256 去重、异步 Tika 抽文本
 - [ ] `/files` Controller
 - [ ] `ChatService` 的 `PromptBuilder` 支持 `fileIds[]` 注入
 - [ ] 前端：Composer 拖拽上传、附件气泡
 - [ ] 前端：`FilesPage` 列表、删除
-- [ ] 前端：流式气泡增加 `tool_call` + `tool_result` 折叠块
+- [x] 前端：流式气泡增加 `tool_call` + `tool_result` 折叠块
 - [ ] Flyway V5 增补：内置 plugin 定义（4 个工具的 schema）
-- [ ] `/plugins` GET 列表
+- [x] `/plugins` GET 列表
+
+说明：按 `docs/CODEX-IMPLEMENTATION-ROADMAP.md` 的收敛决策，当前 Phase 11 以 `openai` provider 工具主链完成为准；`anthropic` / `gemini` 的 tools 适配层延期到后续扩展阶段。
 
 ### 验收（M3 demo）
 1. 开启 `calculator` 工具。

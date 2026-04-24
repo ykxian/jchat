@@ -6,6 +6,10 @@ public interface Tool {
 
     String name();
 
+    default String displayName() {
+        return name();
+    }
+
     String description();
 
     JsonNode jsonSchema();
@@ -14,5 +18,9 @@ public interface Tool {
 
     default boolean isEnabled() {
         return true;
+    }
+
+    default String disabledReason() {
+        return null;
     }
 }

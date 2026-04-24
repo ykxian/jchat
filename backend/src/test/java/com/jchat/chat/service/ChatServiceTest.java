@@ -20,6 +20,7 @@ import com.jchat.llm.dto.FinishReason;
 import com.jchat.llm.dto.ProviderContext;
 import com.jchat.mask.service.MaskService;
 import com.jchat.plugin.ToolExecutor;
+import com.jchat.plugin.ToolRegistry;
 import java.util.List;
 import java.util.concurrent.Executor;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,6 +71,9 @@ class ChatServiceTest {
     @Mock
     private ToolExecutor toolExecutor;
 
+    @Mock
+    private ToolRegistry toolRegistry;
+
     @Captor
     private ArgumentCaptor<ChatRequest> chatRequestCaptor;
 
@@ -86,6 +90,7 @@ class ChatServiceTest {
                 apiKeyService,
                 maskService,
                 toolExecutor,
+                toolRegistry,
                 Runnable::run
         );
     }
@@ -102,6 +107,11 @@ class ChatServiceTest {
         when(messageService.createUserMessage(conversation, "hello", "openai", "gpt-4o-mini")).thenReturn(userMessage);
         when(messageService.listEntities(42L)).thenReturn(List.of(userMessage));
         when(promptBuilder.build(conversation, null, List.of(userMessage))).thenReturn(List.of(ChatMessage.user("hello")));
+        when(toolRegistry.listEnabledToolSpecs()).thenReturn(List.of(new ChatRequest.ToolSpec(
+                "calculator",
+                "Evaluate a math expression. Supports +, -, *, /, ^, sqrt, sin, cos, etc.",
+                com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode()
+        )));
         when(apiKeyService.resolveForChat(7L, "openai", null))
                 .thenReturn(new ApiKeyService.ResolvedApiKey(null, null));
         when(llmProvider.stream(any(ChatRequest.class), any(ProviderContext.class))).thenReturn(Flux.just(
@@ -170,6 +180,11 @@ class ChatServiceTest {
         when(messageService.createUserMessage(conversation, "hello", "openai", "gpt-4o-mini")).thenReturn(userMessage);
         when(messageService.listEntities(42L)).thenReturn(List.of(userMessage));
         when(promptBuilder.build(conversation, null, List.of(userMessage))).thenReturn(List.of(ChatMessage.user("hello")));
+        when(toolRegistry.listEnabledToolSpecs()).thenReturn(List.of(new ChatRequest.ToolSpec(
+                "calculator",
+                "Evaluate a math expression. Supports +, -, *, /, ^, sqrt, sin, cos, etc.",
+                com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode()
+        )));
         when(apiKeyService.resolveForChat(7L, "openai", null))
                 .thenReturn(new ApiKeyService.ResolvedApiKey(null, null));
         when(llmProvider.stream(any(ChatRequest.class), any(ProviderContext.class)))

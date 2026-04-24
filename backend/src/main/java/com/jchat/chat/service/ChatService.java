@@ -21,6 +21,7 @@ import com.jchat.mask.entity.Mask;
 import com.jchat.mask.service.MaskService;
 import com.jchat.plugin.ToolContext;
 import com.jchat.plugin.ToolExecutor;
+import com.jchat.plugin.ToolRegistry;
 import com.jchat.plugin.ToolResult;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -53,6 +54,7 @@ public class ChatService {
     private final ApiKeyService apiKeyService;
     private final MaskService maskService;
     private final ToolExecutor toolExecutor;
+    private final ToolRegistry toolRegistry;
     private final Executor virtualThreadExecutor;
 
     public ChatService(
@@ -64,6 +66,7 @@ public class ChatService {
             ApiKeyService apiKeyService,
             MaskService maskService,
             ToolExecutor toolExecutor,
+            ToolRegistry toolRegistry,
             @Qualifier("virtualThreadExecutor") Executor virtualThreadExecutor
     ) {
         this.conversationService = conversationService;
@@ -74,6 +77,7 @@ public class ChatService {
         this.apiKeyService = apiKeyService;
         this.maskService = maskService;
         this.toolExecutor = toolExecutor;
+        this.toolRegistry = toolRegistry;
         this.virtualThreadExecutor = virtualThreadExecutor;
     }
 
@@ -372,7 +376,10 @@ public class ChatService {
             ChatCompletionRequest request,
             String providerName
     ) {
-        List<ChatRequest.ToolSpec> tools = "openai".equals(providerName) ? List.of(calculatorToolSpec()) : null;
+        List<ChatRequest.ToolSpec> tools = "openai".equals(providerName) ? toolRegistry.listEnabledToolSpecs() : null;
+        if (tools != null && tools.isEmpty()) {
+            tools = null;
+        }
 
         return new ChatRequest(
                 normalizeModel(request.model(), conversation.getModel()),
@@ -419,23 +426,6 @@ public class ChatService {
             maskId = conversation.getMaskId();
         }
         return maskId == null ? null : maskService.requireVisibleMask(userId, maskId);
-    }
-
-    private ChatRequest.ToolSpec calculatorToolSpec() {
-        var factory = com.fasterxml.jackson.databind.node.JsonNodeFactory.instance;
-        var schema = factory.objectNode();
-        var properties = factory.objectNode();
-        properties.set("expression", factory.objectNode()
-                .put("type", "string")
-                .put("description", "Math expression to evaluate"));
-        schema.put("type", "object");
-        schema.set("properties", properties);
-        schema.set("required", factory.arrayNode().add("expression"));
-        return new ChatRequest.ToolSpec(
-                "calculator",
-                "Evaluate a math expression. Supports +, -, *, /, ^, sqrt, sin, cos, etc.",
-                schema
-        );
     }
 
     private List<ChatCompletionMessage> normalizeNewMessages(List<ChatCompletionMessage> messages) {

@@ -224,6 +224,14 @@ public class AppProperties {
     public static class Tools {
 
         private boolean calculatorEnabled = true;
+        private boolean weatherEnabled = true;
+        private String weatherGeocodingBaseUrl = "https://geocoding-api.open-meteo.com";
+        private String weatherForecastBaseUrl = "https://api.open-meteo.com";
+        private String httpFetchAllowlist = "";
+        private int httpFetchTimeoutSeconds = 10;
+        private int httpFetchMaxBytes = 2 * 1024 * 1024;
+        private boolean webSearchEnabled = true;
+        private String webSearchBaseUrl = "https://www.bing.com/search";
 
         public boolean isCalculatorEnabled() {
             return calculatorEnabled;
@@ -231,6 +239,70 @@ public class AppProperties {
 
         public void setCalculatorEnabled(boolean calculatorEnabled) {
             this.calculatorEnabled = calculatorEnabled;
+        }
+
+        public boolean isWeatherEnabled() {
+            return weatherEnabled;
+        }
+
+        public void setWeatherEnabled(boolean weatherEnabled) {
+            this.weatherEnabled = weatherEnabled;
+        }
+
+        public String getWeatherGeocodingBaseUrl() {
+            return weatherGeocodingBaseUrl;
+        }
+
+        public void setWeatherGeocodingBaseUrl(String weatherGeocodingBaseUrl) {
+            this.weatherGeocodingBaseUrl = weatherGeocodingBaseUrl;
+        }
+
+        public String getWeatherForecastBaseUrl() {
+            return weatherForecastBaseUrl;
+        }
+
+        public void setWeatherForecastBaseUrl(String weatherForecastBaseUrl) {
+            this.weatherForecastBaseUrl = weatherForecastBaseUrl;
+        }
+
+        public String getHttpFetchAllowlist() {
+            return httpFetchAllowlist;
+        }
+
+        public void setHttpFetchAllowlist(String httpFetchAllowlist) {
+            this.httpFetchAllowlist = httpFetchAllowlist;
+        }
+
+        public int getHttpFetchTimeoutSeconds() {
+            return httpFetchTimeoutSeconds;
+        }
+
+        public void setHttpFetchTimeoutSeconds(int httpFetchTimeoutSeconds) {
+            this.httpFetchTimeoutSeconds = httpFetchTimeoutSeconds;
+        }
+
+        public int getHttpFetchMaxBytes() {
+            return httpFetchMaxBytes;
+        }
+
+        public void setHttpFetchMaxBytes(int httpFetchMaxBytes) {
+            this.httpFetchMaxBytes = httpFetchMaxBytes;
+        }
+
+        public boolean isWebSearchEnabled() {
+            return webSearchEnabled;
+        }
+
+        public void setWebSearchEnabled(boolean webSearchEnabled) {
+            this.webSearchEnabled = webSearchEnabled;
+        }
+
+        public String getWebSearchBaseUrl() {
+            return webSearchBaseUrl;
+        }
+
+        public void setWebSearchBaseUrl(String webSearchBaseUrl) {
+            this.webSearchBaseUrl = webSearchBaseUrl;
         }
     }
 

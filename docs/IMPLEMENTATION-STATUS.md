@@ -6,8 +6,8 @@
 
 ## Current Stage
 
-- 当前目标：`Phase 11`
-- 当前状态：`可开始`
+- 当前目标：`Phase 12`
+- 当前状态：`Phase 11 已完成，可开始`
 - 最后更新：`2026-04-24`
 
 ---
@@ -890,53 +890,62 @@ curl -N http://localhost:8080/api/v1/chat/completions \
 
 ---
 
-## Phase 11 进行中
+## Phase 11 已完成主要工具交付
 
-### 已完成的 calculator 子目标
+### 本轮新增 / 更新
 
-- 已新增 [/backend/src/main/java/com/jchat/plugin/Tool.java](/home/ykx/jchat/backend/src/main/java/com/jchat/plugin/Tool.java)
-- 已新增 [/backend/src/main/java/com/jchat/plugin/ToolContext.java](/home/ykx/jchat/backend/src/main/java/com/jchat/plugin/ToolContext.java)
-- 已新增 [/backend/src/main/java/com/jchat/plugin/ToolResult.java](/home/ykx/jchat/backend/src/main/java/com/jchat/plugin/ToolResult.java)
-- 已新增 [/backend/src/main/java/com/jchat/plugin/ToolRegistry.java](/home/ykx/jchat/backend/src/main/java/com/jchat/plugin/ToolRegistry.java)
-- 已新增 [/backend/src/main/java/com/jchat/plugin/ToolExecutor.java](/home/ykx/jchat/backend/src/main/java/com/jchat/plugin/ToolExecutor.java)
-- 已新增 [/backend/src/main/java/com/jchat/plugin/builtin/CalculatorTool.java](/home/ykx/jchat/backend/src/main/java/com/jchat/plugin/builtin/CalculatorTool.java)
+- 已新增 [/backend/src/main/java/com/jchat/plugin/builtin/WeatherTool.java](/home/ykx/jchat/backend/src/main/java/com/jchat/plugin/builtin/WeatherTool.java)
+- 已新增 [/backend/src/main/java/com/jchat/plugin/builtin/HttpFetchTool.java](/home/ykx/jchat/backend/src/main/java/com/jchat/plugin/builtin/HttpFetchTool.java)
+- 已新增 [/backend/src/main/java/com/jchat/plugin/builtin/WebSearchTool.java](/home/ykx/jchat/backend/src/main/java/com/jchat/plugin/builtin/WebSearchTool.java)
+- 已新增 [/backend/src/test/java/com/jchat/plugin/builtin/WeatherToolTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/plugin/builtin/WeatherToolTest.java)
+- 已新增 [/backend/src/test/java/com/jchat/plugin/builtin/HttpFetchToolTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/plugin/builtin/HttpFetchToolTest.java)
+- 已新增 [/backend/src/test/java/com/jchat/plugin/builtin/WebSearchToolTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/plugin/builtin/WebSearchToolTest.java)
+- 已更新 [/backend/src/main/java/com/jchat/plugin/ToolRegistry.java](/home/ykx/jchat/backend/src/main/java/com/jchat/plugin/ToolRegistry.java)
 - 已更新 [/backend/src/main/java/com/jchat/chat/service/ChatService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/service/ChatService.java)
-- 已更新 [/backend/src/main/java/com/jchat/chat/service/PromptBuilder.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/service/PromptBuilder.java)
-- 已更新 [/backend/src/main/java/com/jchat/chat/dto/SseMessage.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/dto/SseMessage.java)
-- 已更新 [/backend/src/main/java/com/jchat/conversation/service/MessageService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/service/MessageService.java)
-- 已更新 [/backend/src/main/java/com/jchat/llm/dto/ChatChunk.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/dto/ChatChunk.java)
-- 已更新 [/backend/src/main/java/com/jchat/llm/dto/ChatMessage.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/dto/ChatMessage.java)
-- 已更新 [/backend/src/main/java/com/jchat/llm/dto/ChatRequest.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/dto/ChatRequest.java)
-- 已更新 [/backend/src/main/java/com/jchat/llm/openai/OpenAiCompatibleProvider.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/openai/OpenAiCompatibleProvider.java)
-- 已更新 [/backend/src/main/java/com/jchat/llm/openai/OpenAiRequest.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/openai/OpenAiRequest.java)
-- 已更新 [/frontend/src/api/types.ts](/home/ykx/jchat/frontend/src/api/types.ts)
-- 已更新 [/frontend/src/components/chat/MessageList.tsx](/home/ykx/jchat/frontend/src/components/chat/MessageList.tsx)
-- 已更新 [/frontend/src/pages/ChatPage.tsx](/home/ykx/jchat/frontend/src/pages/ChatPage.tsx)
+- 已更新 [/backend/src/main/java/com/jchat/config/AppProperties.java](/home/ykx/jchat/backend/src/main/java/com/jchat/config/AppProperties.java)
+- 已更新 [/backend/src/main/resources/application.yml](/home/ykx/jchat/backend/src/main/resources/application.yml)
+- 已更新 [/.env.example](/home/ykx/jchat/.env.example)
+- 已更新 [/backend/src/test/java/com/jchat/chat/service/ChatServiceTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/chat/service/ChatServiceTest.java)
 
 当前仓库已具备：
 
-- 最小工具基础设施：`Tool`、`ToolRegistry`、`ToolExecutor`
-- 内置 `calculator` 工具，可计算数学表达式
-- OpenAI-compatible 请求体已支持 tool schema，下游 SSE 已支持 `tool_call`
-- chat 主链已支持单轮 `tool_calls -> 执行 calculator -> 二次 completion`
-- assistant tool call 与 tool result 已持久化到 `messages`
-- 前端聊天页已能显示 `tool_call` 和 `tool_result` 的最小事件气泡
+- 四个内置工具：`calculator`、`weather`、`http_fetch`、`web_search`
+- `ToolRegistry` 已支持按启用状态汇总 tool schema，`ChatService` 不再硬编码单个 `calculator`
+- `weather` 已接 Open-Meteo 地理编码 + 天气查询
+- `http_fetch` 已具备 `http/https` 校验、域名白名单、响应大小限制、基础文本提取
+- `web_search` 已具备基于 Bing RSS 的搜索能力，并兼容 `www.bing.com -> cn.bing.com` 的跳转场景
+- OpenAI-compatible chat roundtrip 可持续触发 `tool_call -> tool_result -> 二次 completion`
+- `/api/v1/plugins` 已可返回工具清单、启用状态、禁用原因与 schema
+- `ToolExecutor` 已接入基于 Redis 的 `5/min/user/tool` 限流与执行审计日志
 
 ### Phase 11 当前验证结果
 
 已完成验证：
 
-- `cd frontend && npm run build` 通过
-- `cd backend && ./gradlew --no-daemon test --tests com.jchat.llm.openai.OpenAiCompatibleProviderTest --tests com.jchat.chat.service.ChatServiceTest --tests com.jchat.chat.controller.ChatControllerTest --tests com.jchat.conversation.service.MessageServiceTest` 通过
+- `cd backend && ./gradlew --no-daemon test --tests com.jchat.plugin.builtin.WeatherToolTest --tests com.jchat.plugin.builtin.HttpFetchToolTest --tests com.jchat.plugin.builtin.WebSearchToolTest --tests com.jchat.chat.service.ChatServiceTest --tests com.jchat.llm.openai.OpenAiCompatibleProviderTest --tests com.jchat.chat.controller.ChatControllerTest` 通过
+- 真实上游联调已验证 `weather`
+  - 使用上游 `http://ykxcodex.bbroot.com:7860/v1`
+  - 模型 `qwen3.6-plus`
+  - SSE 观察到 `tool_call(weather)`、`tool_result(weather)`、最终 assistant 回复
+- 真实上游联调已验证 `http_fetch`
+  - 配置 `APP_TOOLS_HTTP_FETCH_ALLOWLIST=127.0.0.1`
+  - SSE 观察到 `tool_call(http_fetch)`、`tool_result({"status":"UP"})`、最终 assistant 回复
+- 真实上游联调已验证 `web_search`
+  - SSE 观察到 `tool_call(web_search)`、`tool_result(Search results for "OpenAI official site": ...)`、最终 assistant 回复
+- 真实 API 已验证 `/api/v1/plugins`
+  - 返回 `calculator`、`weather`、`http_fetch`、`web_search` 四个工具及各自 schema
+- 真实 API 已验证工具限流
+  - 同一用户连续第 6 次触发 `calculator` 后，SSE 返回 `error.code=RATE_LIMITED`
 
 ### 当前范围判断
 
-- 本轮只实现路线图建议顺序里的第一个子目标：`calculator`
-- `weather`、`http_fetch`、`web_search` 仍未开始
-- 仅为 `openai` provider 接入 tools；`anthropic` / `gemini` 仍保持文本流式模式
+- 路线图中 `Phase 11` 的剩余三个工具已补齐
+- 仅 `openai` provider 接入 tools；`anthropic` / `gemini` 仍保持文本流式模式
+- 当前实现已具备超时、`5/min/user/tool` 限流、执行审计日志与 `http_fetch` 白名单保护
+- `anthropic` / `gemini` 的 tools 适配层仍未实现，因此 Phase 11 现在是按现有项目收敛决策完成 `openai` 主链
 
 ### 下一步建议
 
-1. 先做一次真实上游手工联调，确认模型实际会发出 `calculator` tool call
-2. 如主链稳定，再继续 `weather`
-3. `http_fetch` 与 `web_search` 放到 calculator / weather 稳定后继续，不并行开
+1. 若继续严格扩 `Phase 11`，下一项是 `anthropic` / `gemini` 的 tools 适配层
+2. 若按路线图主路径前进，可进入 `Phase 12` 文件上传与轻量 RAG
+3. 前端如果要补设置页工具清单，现在可以直接消费 `/api/v1/plugins`

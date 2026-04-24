@@ -79,3 +79,13 @@ app:
     gemini:
       base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
       api-key: ${GEMINI_API_KEY:}
+  tools:
+    calculator-enabled: ${APP_TOOLS_CALCULATOR_ENABLED:true}
+    weather-enabled: ${APP_TOOLS_WEATHER_ENABLED:true}
+    weather-geocoding-base-url: ${APP_TOOLS_WEATHER_GEOCODING_BASE_URL:https://geocoding-api.open-meteo.com}
+    weather-forecast-base-url: ${APP_TOOLS_WEATHER_FORECAST_BASE_URL:https://api.open-meteo.com}
+    http-fetch-allowlist: ${APP_TOOLS_HTTP_FETCH_ALLOWLIST:}
+    http-fetch-timeout-seconds: ${APP_TOOLS_HTTP_FETCH_TIMEOUT_SECONDS:10}
+    http-fetch-max-bytes: ${APP_TOOLS_HTTP_FETCH_MAX_BYTES:2097152}
+    web-search-enabled: ${APP_TOOLS_WEB_SEARCH_ENABLED:true}
+    web-search-base-url: ${APP_TOOLS_WEB_SEARCH_BASE_URL:https://www.bing.com/search}

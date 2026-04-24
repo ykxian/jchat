@@ -25,6 +25,11 @@ public class CalculatorTool implements Tool {
     }
 
     @Override
+    public String displayName() {
+        return "Calculator";
+    }
+
+    @Override
     public String description() {
         return "Evaluate a math expression. Supports +, -, *, /, ^, sqrt, sin, cos, etc.";
     }
@@ -61,5 +66,10 @@ public class CalculatorTool implements Tool {
     @Override
     public boolean isEnabled() {
         return appProperties.getTools().isCalculatorEnabled();
+    }
+
+    @Override
+    public String disabledReason() {
+        return isEnabled() ? null : "APP_TOOLS_CALCULATOR_ENABLED=false";
     }
 }
