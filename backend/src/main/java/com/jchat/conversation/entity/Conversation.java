@@ -35,6 +35,9 @@ public class Conversation {
     @Column(name = "system_prompt", columnDefinition = "text")
     private String systemPrompt;
 
+    @Column(name = "mask_id")
+    private Long maskId;
+
     @Column(name = "reasoning_effort", length = 20)
     private String reasoningEffort;
 
@@ -107,6 +110,14 @@ public class Conversation {
 
     public void setSystemPrompt(String systemPrompt) {
         this.systemPrompt = systemPrompt;
+    }
+
+    public Long getMaskId() {
+        return maskId;
+    }
+
+    public void setMaskId(Long maskId) {
+        this.maskId = maskId;
     }
 
     public String getReasoningEffort() {

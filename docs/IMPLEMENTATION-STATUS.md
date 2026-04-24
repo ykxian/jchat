@@ -6,7 +6,7 @@
 
 ## Current Stage
 
-- 当前目标：`Phase 10`
+- 当前目标：`Phase 11`
 - 当前状态：`可开始`
 - 最后更新：`2026-04-24`
 
@@ -785,3 +785,105 @@ curl -N http://localhost:8080/api/v1/chat/completions \
 - `Anthropic` / `Gemini` 当前只覆盖 Phase 9 所需的最小文本流式链路，tools/function calling 仍保留到 `Phase 11`
 - `reasoningEffort` 当前只透传到 OpenAI-compatible 请求体，其他 provider 暂未映射
 - 真实上游联调仍建议手工跑一轮，以确认不同 provider 账户和模型命名与本地配置一致
+
+---
+
+## Phase 10 已完成
+
+### masks 主链
+
+- 已新增 [/backend/src/main/resources/db/migration/V5__masks.sql](/home/ykx/jchat/backend/src/main/resources/db/migration/V5__masks.sql)
+- 已新增 [/backend/src/main/java/com/jchat/mask/entity/Mask.java](/home/ykx/jchat/backend/src/main/java/com/jchat/mask/entity/Mask.java)
+- 已新增 [/backend/src/main/java/com/jchat/mask/dto/CreateMaskRequest.java](/home/ykx/jchat/backend/src/main/java/com/jchat/mask/dto/CreateMaskRequest.java)
+- 已新增 [/backend/src/main/java/com/jchat/mask/dto/UpdateMaskRequest.java](/home/ykx/jchat/backend/src/main/java/com/jchat/mask/dto/UpdateMaskRequest.java)
+- 已新增 [/backend/src/main/java/com/jchat/mask/dto/MaskResponse.java](/home/ykx/jchat/backend/src/main/java/com/jchat/mask/dto/MaskResponse.java)
+- 已新增 [/backend/src/main/java/com/jchat/mask/repository/MaskRepository.java](/home/ykx/jchat/backend/src/main/java/com/jchat/mask/repository/MaskRepository.java)
+- 已新增 [/backend/src/main/java/com/jchat/mask/service/MaskService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/mask/service/MaskService.java)
+- 已新增 [/backend/src/main/java/com/jchat/mask/controller/MaskController.java](/home/ykx/jchat/backend/src/main/java/com/jchat/mask/controller/MaskController.java)
+- 已新增 [/backend/src/test/java/com/jchat/mask/service/MaskServiceTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/mask/service/MaskServiceTest.java)
+- 已新增 [/backend/src/test/java/com/jchat/mask/controller/MaskControllerTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/mask/controller/MaskControllerTest.java)
+- 已更新 [/backend/src/main/java/com/jchat/conversation/entity/Conversation.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/entity/Conversation.java)
+- 已更新 [/backend/src/main/java/com/jchat/conversation/dto/CreateConversationRequest.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/dto/CreateConversationRequest.java)
+- 已更新 [/backend/src/main/java/com/jchat/conversation/dto/UpdateConversationRequest.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/dto/UpdateConversationRequest.java)
+- 已更新 [/backend/src/main/java/com/jchat/conversation/dto/ConversationResponse.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/dto/ConversationResponse.java)
+- 已更新 [/backend/src/main/java/com/jchat/conversation/service/ConversationService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/service/ConversationService.java)
+- 已更新 [/backend/src/main/java/com/jchat/chat/dto/ChatCompletionRequest.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/dto/ChatCompletionRequest.java)
+- 已更新 [/backend/src/main/java/com/jchat/chat/service/PromptBuilder.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/service/PromptBuilder.java)
+- 已更新 [/backend/src/main/java/com/jchat/chat/service/ChatService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/service/ChatService.java)
+
+当前仓库已具备：
+
+- `masks` 表、`conversations.mask_id` 外键以及 5 条内置 seed mask
+- `GET/POST/GET by id/PATCH/DELETE /api/v1/masks` 最小 CRUD
+- mask 可见性规则：系统内置、本人、自定义公开 mask 可见；系统 mask 不可修改删除
+- 会话已支持保存 `maskId`
+- 新建会话时可使用 mask 的默认 `provider/model`
+- chat 请求已支持透传 `maskId`
+- prompt 组装已接入会话级 `systemPrompt` + mask `systemPrompt`
+
+### frontend masks 入口
+
+- 已新增 [/frontend/src/api/masks.ts](/home/ykx/jchat/frontend/src/api/masks.ts)
+- 已新增 [/frontend/src/pages/MasksPage.tsx](/home/ykx/jchat/frontend/src/pages/MasksPage.tsx)
+- 已更新 [/frontend/src/api/types.ts](/home/ykx/jchat/frontend/src/api/types.ts)
+- 已更新 [/frontend/src/router.tsx](/home/ykx/jchat/frontend/src/router.tsx)
+- 已更新 [/frontend/src/components/layout/AppShell.tsx](/home/ykx/jchat/frontend/src/components/layout/AppShell.tsx)
+- 已更新 [/frontend/src/pages/ChatPage.tsx](/home/ykx/jchat/frontend/src/pages/ChatPage.tsx)
+- 已更新 [/frontend/src/styles/globals.css](/home/ykx/jchat/frontend/src/styles/globals.css)
+
+当前前端已具备：
+
+- `/masks` 页面：列表、搜索、创建、编辑、删除
+- 内置与用户自建 mask 的状态展示
+- “基于此新建会话”入口
+- Chat 页面顶部 `Mask` 选择器
+- 新建会话与聊天请求都能带上当前选中的 `maskId`
+
+### Phase 10 验证结果
+
+已完成验证：
+
+- `cd backend && ./gradlew test` 通过
+- `cd frontend && npm run build` 通过
+- 新增 backend 单测覆盖：
+  - `MaskServiceTest`
+  - `MaskControllerTest`
+- 既有 conversations/chat/auth/provider 测试在本轮修改后保持通过
+
+### 手工验证建议
+
+在 backend 与 frontend 已启动的前提下，可按以下方式验证：
+
+1. 登录后访问 `/masks`
+2. 确认能看到内置 seed mask 列表
+3. 新建一条自定义 mask，填写 `system prompt` 与默认 provider/model
+4. 编辑该 mask，确认修改可保存
+5. 从 `/masks` 点 `New chat`，确认跳转到新会话
+6. 在 `/chat/{id}` 顶部确认 `Mask`、`Provider`、`Model` 已自动带入
+7. 发送一条消息，确认流式响应正常
+8. 刷新页面后确认会话的 `maskId` 仍保留
+
+预期结果：
+
+- `/masks` 可完成最小 CRUD
+- 系统内置 mask 不显示编辑删除按钮
+- 基于 mask 创建的新会话会继承默认 provider/model
+- chat 主链不受破坏，mask 的 system prompt 已进入 prompt 组装
+
+### 完成判断
+
+按路线图交付物和本地验证结果判断，`Phase 10` 已完成，可以进入 `Phase 11`。
+
+原因：
+
+- 已落地 `masks` schema、entity、service、controller 与测试
+- 已补齐内置 mask seed 机制
+- 已将 `maskId` 接入 conversations 与 chat 主链
+- 已提供 `/masks` 页面和聊天页 mask 选择器
+- 已满足本阶段完成标准：可创建/编辑/删除自定义 mask，可选择 mask 建会话，system prompt 生效
+
+保留风险：
+
+- 本阶段按路线图收敛，未实现 NextChat JSON 导入导出
+- 当前搜索在 service 层做名称/标签过滤，数据规模较小时足够；后续如种子和用户自建规模显著增大，可再下推到更强的 DB 查询
+- 真实上游联调仍建议手工跑一轮，以确认不同 provider 在 mask 默认模型上的可用性

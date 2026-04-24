@@ -74,6 +74,7 @@ class ConversationControllerTest {
                         "gpt-4o-mini",
                         null,
                         null,
+                        null,
                         false,
                         false,
                         null,
@@ -100,6 +101,7 @@ class ConversationControllerTest {
                 "openai",
                 "gpt-4o-mini",
                 "be precise",
+                null,
                 "high",
                 false,
                 false,
@@ -112,7 +114,7 @@ class ConversationControllerTest {
         mockMvc.perform(post("/api/v1/conversations")
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new CreateConversationRequest("Chat", "openai", "gpt-4o-mini", "be precise", "high"))))
+                                new CreateConversationRequest("Chat", "openai", "gpt-4o-mini", "be precise", null, "high"))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value("42"))
                 .andExpect(jsonPath("$.title").value("Chat"))
@@ -127,6 +129,7 @@ class ConversationControllerTest {
                 "openai",
                 "gpt-4.1",
                 null,
+                null,
                 "medium",
                 true,
                 false,
@@ -139,7 +142,7 @@ class ConversationControllerTest {
         mockMvc.perform(patch("/api/v1/conversations/42")
                         .contentType(APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new UpdateConversationRequest("Renamed", true, null, null, null, "gpt-4.1", "medium"))))
+                                new UpdateConversationRequest("Renamed", true, null, null, null, null, "gpt-4.1", "medium"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Renamed"))
                 .andExpect(jsonPath("$.pinned").value(true))

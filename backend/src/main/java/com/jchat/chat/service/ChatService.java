@@ -17,6 +17,8 @@ import com.jchat.llm.LlmProviderRegistry;
 import com.jchat.llm.dto.ChatChunk;
 import com.jchat.llm.dto.ChatRequest;
 import com.jchat.llm.dto.ProviderContext;
+import com.jchat.mask.entity.Mask;
+import com.jchat.mask.service.MaskService;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
@@ -42,6 +44,7 @@ public class ChatService {
     private final SseEventWriter sseEventWriter;
     private final AppProperties appProperties;
     private final ApiKeyService apiKeyService;
+    private final MaskService maskService;
 
     public ChatService(
             ConversationService conversationService,
@@ -50,7 +53,8 @@ public class ChatService {
             LlmProviderRegistry llmProviderRegistry,
             SseEventWriter sseEventWriter,
             AppProperties appProperties,
-            ApiKeyService apiKeyService
+            ApiKeyService apiKeyService,
+            MaskService maskService
     ) {
         this.conversationService = conversationService;
         this.messageService = messageService;
@@ -59,6 +63,7 @@ public class ChatService {
         this.sseEventWriter = sseEventWriter;
         this.appProperties = appProperties;
         this.apiKeyService = apiKeyService;
+        this.maskService = maskService;
     }
 
     public SseEmitter complete(Long userId, ChatCompletionRequest request) {
@@ -69,6 +74,7 @@ public class ChatService {
         String modelName = normalizeModel(request.model(), conversation.getModel());
         LlmProvider provider = llmProviderRegistry.get(providerName);
         conversationService.updateModelSelection(conversation, providerName, modelName);
+        Mask mask = resolveMask(userId, request.maskId(), conversation);
 
         List<ChatCompletionMessage> newMessages = normalizeNewMessages(request.messages());
         Message userMessage = persistLatestUserMessage(conversation, newMessages, providerName, modelName);
@@ -76,7 +82,7 @@ public class ChatService {
         List<Message> history = messageService.listEntities(conversation.getId());
         ChatRequest chatRequest = new ChatRequest(
                 modelName,
-                promptBuilder.build(conversation, history),
+                promptBuilder.build(conversation, mask, history),
                 request.temperature(),
                 request.topP(),
                 request.maxTokens(),
@@ -267,6 +273,16 @@ public class ChatService {
 
     private Long parseConversationId(String conversationId) {
         return parseRequiredId(conversationId, "conversationId");
+    }
+
+    private Mask resolveMask(Long userId, String requestMaskId, Conversation conversation) {
+        Long maskId = requestMaskId == null
+                ? conversation.getMaskId()
+                : parseNullableId(requestMaskId, "maskId");
+        if (maskId == null) {
+            return null;
+        }
+        return maskService.requireVisibleMask(userId, maskId);
     }
 
     private Long parseNullableId(String rawValue, String fieldName) {

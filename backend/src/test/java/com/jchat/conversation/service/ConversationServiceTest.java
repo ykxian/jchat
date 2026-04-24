@@ -9,6 +9,7 @@ import com.jchat.conversation.dto.CreateConversationRequest;
 import com.jchat.conversation.dto.UpdateConversationRequest;
 import com.jchat.conversation.entity.Conversation;
 import com.jchat.conversation.repository.ConversationRepository;
+import com.jchat.mask.service.MaskService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +36,9 @@ class ConversationServiceTest {
     @Mock
     private ConversationRepository conversationRepository;
 
+    @Mock
+    private MaskService maskService;
+
     @Captor
     private ArgumentCaptor<Conversation> conversationCaptor;
 
@@ -42,7 +46,7 @@ class ConversationServiceTest {
 
     @BeforeEach
     void setUp() {
-        conversationService = new ConversationService(conversationRepository);
+        conversationService = new ConversationService(conversationRepository, maskService);
     }
 
     @Test
@@ -57,7 +61,7 @@ class ConversationServiceTest {
 
         ConversationResponse response = conversationService.create(
                 7L,
-                new CreateConversationRequest("  New Chat  ", " openai ", " gpt-4o-mini ", "  be precise  ", " high ")
+                new CreateConversationRequest("  New Chat  ", " openai ", " gpt-4o-mini ", "  be precise  ", null, " high ")
         );
 
         verify(conversationRepository).save(conversationCaptor.capture());
@@ -140,7 +144,7 @@ class ConversationServiceTest {
         ConversationResponse response = conversationService.update(
                 7L,
                 5L,
-                new UpdateConversationRequest(" Renamed ", true, null, " new prompt ", null, " gpt-4.1 ", " medium ")
+                new UpdateConversationRequest(" Renamed ", true, null, " new prompt ", null, null, " gpt-4.1 ", " medium ")
         );
 
         assertEquals("Renamed", response.title());
@@ -170,7 +174,7 @@ class ConversationServiceTest {
 
         ConversationResponse response = conversationService.create(
                 7L,
-                new CreateConversationRequest(" ", "openai", "gpt-4o-mini", " ", " ")
+                new CreateConversationRequest(" ", "openai", "gpt-4o-mini", " ", null, " ")
         );
 
         assertNull(response.title());

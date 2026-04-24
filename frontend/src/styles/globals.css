@@ -335,6 +335,7 @@ code {
 
 .settings-field input,
 .settings-field select,
+.settings-field textarea,
 .toolbar-field select,
 .toolbar-field input {
   width: 100%;
@@ -350,7 +351,7 @@ code {
 }
 
 .chat-toolbar__controls {
-  grid-template-columns: repeat(4, minmax(150px, 220px));
+  grid-template-columns: repeat(5, minmax(150px, 220px));
 }
 
 .pill {
@@ -366,6 +367,10 @@ code {
 
 .panel-grid--compact {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.panel-grid--masks {
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
 }
 
 .panel--hero {
@@ -478,6 +483,70 @@ code {
 
 .feature-list li + li {
   margin-top: 8px;
+}
+
+.search-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.search-row input {
+  flex: 1 1 260px;
+  border: 1px solid rgba(247, 242, 234, 0.14);
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: inherit;
+  background: rgba(247, 242, 234, 0.06);
+}
+
+.settings-textarea {
+  resize: vertical;
+  min-height: 180px;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(247, 242, 234, 0.82);
+}
+
+.checkbox-row input {
+  width: 16px;
+  height: 16px;
+}
+
+.mask-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.mask-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(247, 242, 234, 0.11);
+  border-radius: 18px;
+  background: rgba(247, 242, 234, 0.04);
+}
+
+.mask-card__header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mask-card__prompt {
+  margin: 0;
+  color: rgba(247, 242, 234, 0.84);
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .chat-layout {
@@ -707,12 +776,17 @@ code {
 
   .panel-grid,
   .panel-grid--compact,
+  .panel-grid--masks,
   .chat-layout {
     grid-template-columns: 1fr;
   }
 
   .chat-main__header {
     flex-direction: column;
+  }
+
+  .chat-toolbar__controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -751,5 +825,9 @@ code {
 
   .chat-feed {
     max-height: none;
+  }
+
+  .chat-toolbar__controls {
+    grid-template-columns: 1fr;
   }
 }

@@ -9,6 +9,8 @@ import com.jchat.conversation.dto.CreateConversationRequest;
 import com.jchat.conversation.dto.UpdateConversationRequest;
 import com.jchat.conversation.entity.Conversation;
 import com.jchat.conversation.repository.ConversationRepository;
+import com.jchat.mask.entity.Mask;
+import com.jchat.mask.service.MaskService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -24,18 +26,22 @@ public class ConversationService {
     private static final Set<String> ALLOWED_REASONING_EFFORTS = Set.of("low", "medium", "high");
 
     private final ConversationRepository conversationRepository;
+    private final MaskService maskService;
 
-    public ConversationService(ConversationRepository conversationRepository) {
+    public ConversationService(ConversationRepository conversationRepository, MaskService maskService) {
         this.conversationRepository = conversationRepository;
+        this.maskService = maskService;
     }
 
     public ConversationResponse create(Long userId, CreateConversationRequest request) {
+        Mask mask = resolveMask(userId, request.maskId());
         Conversation conversation = new Conversation();
         conversation.setUserId(userId);
         conversation.setTitle(normalizeNullableText(request.title()));
-        conversation.setProvider(normalizeRequiredText(request.provider()));
-        conversation.setModel(normalizeRequiredText(request.model()));
+        conversation.setProvider(resolveProvider(request.provider(), mask));
+        conversation.setModel(resolveModel(request.model(), mask));
         conversation.setSystemPrompt(normalizeNullableText(request.systemPrompt()));
+        conversation.setMaskId(mask == null ? null : mask.getId());
         conversation.setReasoningEffort(normalizeReasoningEffort(request.reasoningEffort()));
         return ConversationResponse.from(conversationRepository.save(conversation));
     }
@@ -89,6 +95,10 @@ public class ConversationService {
         if (request.systemPrompt() != null) {
             conversation.setSystemPrompt(normalizeNullableText(request.systemPrompt()));
         }
+        if (request.maskId() != null) {
+            Mask mask = resolveMask(userId, request.maskId());
+            conversation.setMaskId(mask == null ? null : mask.getId());
+        }
         if (request.provider() != null) {
             conversation.setProvider(normalizeRequiredText(request.provider()));
         }
@@ -132,6 +142,26 @@ public class ConversationService {
         return normalized;
     }
 
+    private String resolveProvider(String provider, Mask mask) {
+        if (StringUtils.hasText(provider)) {
+            return normalizeRequiredText(provider);
+        }
+        if (mask != null && StringUtils.hasText(mask.getDefaultProvider())) {
+            return mask.getDefaultProvider().trim();
+        }
+        throw new ApiException(ErrorCode.VALIDATION_FAILED, "provider is required");
+    }
+
+    private String resolveModel(String model, Mask mask) {
+        if (StringUtils.hasText(model)) {
+            return normalizeRequiredText(model);
+        }
+        if (mask != null && StringUtils.hasText(mask.getDefaultModel())) {
+            return mask.getDefaultModel().trim();
+        }
+        throw new ApiException(ErrorCode.VALIDATION_FAILED, "model is required");
+    }
+
     private String normalizeNullableText(String value) {
         if (!StringUtils.hasText(value)) {
             return null;
@@ -151,5 +181,25 @@ public class ConversationService {
             );
         }
         return normalized;
+    }
+
+    private Mask resolveMask(Long userId, String rawMaskId) {
+        Long maskId = parseNullableId(rawMaskId, "maskId");
+        if (maskId == null) {
+            return null;
+        }
+        return maskService.requireVisibleMask(userId, maskId);
+    }
+
+    private Long parseNullableId(String rawValue, String fieldName) {
+        String normalized = normalizeNullableText(rawValue);
+        if (normalized == null) {
+            return null;
+        }
+        try {
+            return Long.parseLong(normalized);
+        } catch (NumberFormatException ex) {
+            throw new ApiException(ErrorCode.VALIDATION_FAILED, fieldName + " must be a numeric string");
+        }
     }
 }

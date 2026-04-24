@@ -9,6 +9,7 @@ export interface Conversation {
   provider: string;
   model: string;
   systemPrompt: string | null;
+  maskId: string | null;
   reasoningEffort: "low" | "medium" | "high" | null;
   pinned: boolean;
   archived: boolean;
@@ -35,9 +36,10 @@ export interface Message {
 
 export interface CreateConversationPayload {
   title?: string | null;
-  provider: string;
-  model: string;
+  provider?: string | null;
+  model?: string | null;
   systemPrompt?: string | null;
+  maskId?: string | null;
   reasoningEffort?: "low" | "medium" | "high" | null;
 }
 
@@ -46,6 +48,7 @@ export interface UpdateConversationPayload {
   pinned?: boolean | null;
   archived?: boolean | null;
   systemPrompt?: string | null;
+  maskId?: string | null;
   provider?: string | null;
   model?: string | null;
   reasoningEffort?: "low" | "medium" | "high" | null;
@@ -62,6 +65,7 @@ export interface ChatCompletionPayload {
   temperature?: number;
   topP?: number;
   maxTokens?: number | null;
+  maskId?: string | null;
   reasoningEffort?: "low" | "medium" | "high" | null;
   apiKeyId?: string | null;
 }
@@ -101,6 +105,49 @@ export interface ProviderInfo {
 
 export interface ProviderListResponse {
   items: ProviderInfo[];
+}
+
+export interface Mask {
+  id: string;
+  ownerId: string | null;
+  name: string;
+  avatar: string | null;
+  systemPrompt: string;
+  defaultProvider: string | null;
+  defaultModel: string | null;
+  temperature: number | null;
+  topP: number | null;
+  maxTokens: number | null;
+  tags: string[];
+  isPublic: boolean;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface CreateMaskPayload {
+  name: string;
+  avatar?: string | null;
+  systemPrompt: string;
+  defaultProvider?: string | null;
+  defaultModel?: string | null;
+  temperature?: number | null;
+  topP?: number | null;
+  maxTokens?: number | null;
+  tags?: string[];
+  isPublic?: boolean;
+}
+
+export interface UpdateMaskPayload {
+  name?: string | null;
+  avatar?: string | null;
+  systemPrompt?: string | null;
+  defaultProvider?: string | null;
+  defaultModel?: string | null;
+  temperature?: number | null;
+  topP?: number | null;
+  maxTokens?: number | null;
+  tags?: string[] | null;
+  isPublic?: boolean | null;
 }
 
 export interface ApiKeyRecord {

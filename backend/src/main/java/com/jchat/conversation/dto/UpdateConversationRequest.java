@@ -8,6 +8,8 @@ public record UpdateConversationRequest(
         Boolean pinned,
         Boolean archived,
         String systemPrompt,
+        @Size(max = 50, message = "maskId must be at most 50 characters")
+        String maskId,
         @Size(min = 1, max = 50, message = "provider must be between 1 and 50 characters")
         String provider,
         @Size(min = 1, max = 100, message = "model must be between 1 and 100 characters")

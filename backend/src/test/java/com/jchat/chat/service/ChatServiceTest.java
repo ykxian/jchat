@@ -19,6 +19,7 @@ import com.jchat.llm.dto.ChatMessage;
 import com.jchat.llm.dto.ChatRequest;
 import com.jchat.llm.dto.FinishReason;
 import com.jchat.llm.dto.ProviderContext;
+import com.jchat.mask.service.MaskService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,6 +63,9 @@ class ChatServiceTest {
     @Mock
     private ApiKeyService apiKeyService;
 
+    @Mock
+    private MaskService maskService;
+
     @Captor
     private ArgumentCaptor<ChatRequest> chatRequestCaptor;
 
@@ -76,7 +80,8 @@ class ChatServiceTest {
                 llmProviderRegistry,
                 sseEventWriter,
                 new AppProperties(),
-                apiKeyService
+                apiKeyService,
+                maskService
         );
     }
 
@@ -91,7 +96,7 @@ class ChatServiceTest {
         when(llmProviderRegistry.get("openai")).thenReturn(llmProvider);
         when(messageService.createUserMessage(conversation, "hello", "openai", "gpt-4o-mini")).thenReturn(userMessage);
         when(messageService.listEntities(42L)).thenReturn(List.of(userMessage));
-        when(promptBuilder.build(conversation, List.of(userMessage))).thenReturn(List.of(ChatMessage.user("hello")));
+        when(promptBuilder.build(conversation, null, List.of(userMessage))).thenReturn(List.of(ChatMessage.user("hello")));
         when(apiKeyService.resolveForChat(7L, "openai", null))
                 .thenReturn(new ApiKeyService.ResolvedApiKey(null, null));
         when(llmProvider.stream(any(ChatRequest.class), any(ProviderContext.class))).thenReturn(Flux.just(
@@ -120,6 +125,7 @@ class ChatServiceTest {
                 0.7,
                 1.0,
                 256,
+                null,
                 "high",
                 null
         ));
@@ -157,7 +163,7 @@ class ChatServiceTest {
         when(llmProviderRegistry.get("openai")).thenReturn(llmProvider);
         when(messageService.createUserMessage(conversation, "hello", "openai", "gpt-4o-mini")).thenReturn(userMessage);
         when(messageService.listEntities(42L)).thenReturn(List.of(userMessage));
-        when(promptBuilder.build(conversation, List.of(userMessage))).thenReturn(List.of(ChatMessage.user("hello")));
+        when(promptBuilder.build(conversation, null, List.of(userMessage))).thenReturn(List.of(ChatMessage.user("hello")));
         when(apiKeyService.resolveForChat(7L, "openai", null))
                 .thenReturn(new ApiKeyService.ResolvedApiKey(null, null));
         when(llmProvider.stream(any(ChatRequest.class), any(ProviderContext.class)))
@@ -168,6 +174,7 @@ class ChatServiceTest {
                 "openai",
                 "gpt-4o-mini",
                 List.of(new ChatCompletionMessage("user", "hello")),
+                null,
                 null,
                 null,
                 null,

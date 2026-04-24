@@ -18,6 +18,8 @@ public record ChatCompletionRequest(
         Double temperature,
         Double topP,
         Integer maxTokens,
+        @Size(max = 50, message = "maskId must be at most 50 characters")
+        String maskId,
         @Size(max = 20, message = "reasoningEffort must be at most 20 characters")
         String reasoningEffort,
         @Size(max = 50, message = "apiKeyId must be at most 50 characters")

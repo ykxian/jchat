@@ -4,6 +4,7 @@ import com.jchat.conversation.entity.Conversation;
 import com.jchat.conversation.entity.Message;
 import com.jchat.conversation.entity.MessageRole;
 import com.jchat.llm.dto.ChatMessage;
+import com.jchat.mask.entity.Mask;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Component;
@@ -12,11 +13,15 @@ import org.springframework.util.StringUtils;
 @Component
 public class PromptBuilder {
 
-    public List<ChatMessage> build(Conversation conversation, List<Message> history) {
+    public List<ChatMessage> build(Conversation conversation, Mask mask, List<Message> history) {
         List<ChatMessage> prompt = new ArrayList<>();
 
         if (StringUtils.hasText(conversation.getSystemPrompt())) {
             prompt.add(ChatMessage.system(conversation.getSystemPrompt().trim()));
+        }
+
+        if (mask != null && StringUtils.hasText(mask.getSystemPrompt())) {
+            prompt.add(ChatMessage.system(mask.getSystemPrompt().trim()));
         }
 
         for (Message message : history) {

@@ -5,6 +5,7 @@ import { useAuthStore } from "../../stores/authStore";
 
 const navigation = [
   { to: "/chat", label: "Chat" },
+  { to: "/masks", label: "Masks" },
   { to: "/settings", label: "Settings" }
 ];
 
@@ -64,6 +65,7 @@ export function AppShell() {
             <li>Conversation list and message reload after refresh</li>
             <li>Streaming chat linked to authenticated requests</li>
             <li>Provider switching and encrypted BYOK settings</li>
+            <li>Mask presets for prompt and model defaults</li>
           </ul>
         </section>
       </aside>
@@ -75,7 +77,7 @@ export function AppShell() {
             <h2>React SPA</h2>
           </div>
           <div className="button-row">
-            <span className="pill">Auth + conversations + providers + SSE</span>
+            <span className="pill">Auth + conversations + providers + masks + SSE</span>
             <button
               className="button button--ghost"
               disabled={isLoggingOut}

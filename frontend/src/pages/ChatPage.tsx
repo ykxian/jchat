@@ -3,8 +3,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import { apiKeysApi } from "../api/apiKeys";
 import { streamChatCompletion } from "../api/chat";
 import { conversationsApi } from "../api/conversations";
+import { masksApi } from "../api/masks";
 import { providersApi } from "../api/providers";
-import type { ApiKeyRecord, Conversation, Message, ProviderInfo } from "../api/types";
+import type { ApiKeyRecord, Conversation, Mask, Message, ProviderInfo } from "../api/types";
 import { Composer } from "../components/chat/Composer";
 import { MessageList } from "../components/chat/MessageList";
 import { StreamingMessage } from "../components/chat/StreamingMessage";
@@ -76,8 +77,10 @@ export function ChatPage() {
   );
   const [pageError, setPageError] = useState<string | null>(null);
   const [apiKeys, setApiKeys] = useState<ApiKeyRecord[]>([]);
+  const [masks, setMasks] = useState<Mask[]>([]);
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
   const [selectedApiKeyId, setSelectedApiKeyId] = useState<string>("");
+  const [selectedMaskId, setSelectedMaskId] = useState("");
   const [modelDraft, setModelDraft] = useState("");
   const conversations = useConversationStore((state) => state.items);
   const currentId = useConversationStore((state) => state.currentId);
@@ -96,6 +99,7 @@ export function ChatPage() {
   const selectedApiKey =
     apiKeys.find((apiKey) => apiKey.id === selectedApiKeyId && apiKey.provider === currentConversation?.provider) ??
     null;
+  const currentMask = masks.find((mask) => mask.id === (currentConversation?.maskId ?? "")) ?? null;
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -124,13 +128,15 @@ export function ChatPage() {
 
     async function loadProviders() {
       try {
-        const [providerResponse, apiKeyResponse] = await Promise.all([
+        const [providerResponse, apiKeyResponse, maskResponse] = await Promise.all([
           providersApi.list(),
-          apiKeysApi.list()
+          apiKeysApi.list(),
+          masksApi.list()
         ]);
         if (!cancelled) {
           setProviders(providerResponse.items);
           setApiKeys(apiKeyResponse.items);
+          setMasks(maskResponse.items);
         }
       } catch (error) {
         if (!cancelled) {
@@ -276,6 +282,17 @@ export function ChatPage() {
     setModelDraft(currentConversation?.model ?? "");
   }, [currentConversation?.id, currentConversation?.model]);
 
+  useEffect(() => {
+    setSelectedMaskId(currentConversation?.maskId ?? "");
+  }, [currentConversation?.id, currentConversation?.maskId]);
+
+  function getMask(maskId: string | null) {
+    if (!maskId) {
+      return null;
+    }
+    return masks.find((mask) => mask.id === maskId) ?? null;
+  }
+
   async function handleCreateConversation() {
     if (isCreatingConversation || !isOnline || !userId) {
       return;
@@ -286,9 +303,11 @@ export function ChatPage() {
 
     try {
       const defaults = getDefaultSelection(providers);
+      const selectedMask = getMask(selectedMaskId || null);
       const conversation = await conversationsApi.create({
-        model: defaults.model,
-        provider: defaults.provider,
+        maskId: selectedMask?.id ?? null,
+        model: selectedMask?.defaultModel ?? defaults.model,
+        provider: selectedMask?.defaultProvider ?? defaults.provider,
         title: null
       });
       conversationStore.upsertConversation(conversation);
@@ -337,9 +356,11 @@ export function ChatPage() {
 
       if (!targetConversationId) {
         const defaults = getDefaultSelection(providers);
+        const selectedMask = getMask(selectedMaskId || null);
         const conversation = await conversationsApi.create({
-          model: defaults.model,
-          provider: defaults.provider,
+          maskId: selectedMask?.id ?? null,
+          model: selectedMask?.defaultModel ?? defaults.model,
+          provider: selectedMask?.defaultProvider ?? defaults.provider,
           title: null
         });
         conversationStore.upsertConversation(conversation);
@@ -365,6 +386,7 @@ export function ChatPage() {
           conversationId: targetConversationId,
           apiKeyId: selectedApiKeyId || null,
           messages: [{ content, role: "user" }],
+          maskId: currentConversation?.maskId ?? null,
           model: currentConversation?.model ?? DEFAULT_MODEL,
           provider: currentConversation?.provider ?? DEFAULT_PROVIDER,
           reasoningEffort: currentConversation?.reasoningEffort ?? null,
@@ -427,6 +449,7 @@ export function ChatPage() {
   }
 
   async function handleUpdateConversationSelection(patch: {
+    maskId?: string | null;
     provider?: string;
     model?: string;
     reasoningEffort?: "low" | "medium" | "high" | null;
@@ -479,6 +502,31 @@ export function ChatPage() {
           {currentConversation ? (
             <div className="chat-toolbar">
               <div className="chat-toolbar__controls">
+                <label className="toolbar-field">
+                  <span>Mask</span>
+                  <select
+                    disabled={Boolean(isStreamingCurrent)}
+                    onChange={(event) => {
+                      const nextMaskId = event.target.value || null;
+                      const mask = getMask(nextMaskId);
+                      setSelectedMaskId(nextMaskId ?? "");
+                      void handleUpdateConversationSelection({
+                        maskId: nextMaskId,
+                        model: mask?.defaultModel ?? currentConversation.model,
+                        provider: mask?.defaultProvider ?? currentConversation.provider
+                      });
+                    }}
+                    value={currentConversation.maskId ?? ""}
+                  >
+                    <option value="">No mask</option>
+                    {masks.map((mask) => (
+                      <option key={mask.id} value={mask.id}>
+                        {mask.avatar ? `${mask.avatar} ${mask.name}` : mask.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
                 <label className="toolbar-field">
                   <span>Provider</span>
                   <select
@@ -577,15 +625,16 @@ export function ChatPage() {
                 </label>
               </div>
               <div className="status-list">
-              <span>{currentConversation.messageCount} messages</span>
-              {currentConversation.lastMessageAt ? (
-                <span>Updated {new Date(currentConversation.lastMessageAt).toLocaleString()}</span>
-              ) : null}
-              {currentConversation.reasoningEffort ? (
-                <span>Reasoning {currentConversation.reasoningEffort}</span>
-              ) : null}
-              {selectedApiKey?.baseUrl ? <span>Endpoint {selectedApiKey.baseUrl}</span> : null}
-              {selectedApiKey?.baseUrl ? <span>Model is freeform for custom endpoints</span> : null}
+                <span>{currentConversation.messageCount} messages</span>
+                {currentMask ? <span>Mask {currentMask.name}</span> : null}
+                {currentConversation.lastMessageAt ? (
+                  <span>Updated {new Date(currentConversation.lastMessageAt).toLocaleString()}</span>
+                ) : null}
+                {currentConversation.reasoningEffort ? (
+                  <span>Reasoning {currentConversation.reasoningEffort}</span>
+                ) : null}
+                {selectedApiKey?.baseUrl ? <span>Endpoint {selectedApiKey.baseUrl}</span> : null}
+                {selectedApiKey?.baseUrl ? <span>Model is freeform for custom endpoints</span> : null}
               </div>
             </div>
           ) : null}

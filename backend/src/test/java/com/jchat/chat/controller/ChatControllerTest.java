@@ -70,6 +70,7 @@ class ChatControllerTest {
                 0.7,
                 1.0,
                 256,
+                null,
                 "high",
                 null
         );

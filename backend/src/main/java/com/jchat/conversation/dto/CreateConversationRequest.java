@@ -13,6 +13,8 @@ public record CreateConversationRequest(
         @Size(max = 100, message = "model must be at most 100 characters")
         String model,
         String systemPrompt,
+        @Size(max = 50, message = "maskId must be at most 50 characters")
+        String maskId,
         @Size(max = 20, message = "reasoningEffort must be at most 20 characters")
         String reasoningEffort
 ) {
