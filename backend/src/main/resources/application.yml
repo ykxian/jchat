@@ -60,6 +60,8 @@ app:
     refresh-cookie-name: ${AUTH_REFRESH_COOKIE_NAME:refresh}
     refresh-cookie-secure: ${AUTH_REFRESH_COOKIE_SECURE:false}
     refresh-cookie-same-site: ${AUTH_REFRESH_COOKIE_SAME_SITE:Lax}
+  crypto:
+    key: ${APP_CRYPTO_KEY:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
   chat:
     default-provider: ${CHAT_DEFAULT_PROVIDER:openai}
   llm:
@@ -71,3 +73,9 @@ app:
     openai:
       base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
       api-key: ${OPENAI_API_KEY:}
+    anthropic:
+      base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com}
+      api-key: ${ANTHROPIC_API_KEY:}
+    gemini:
+      base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
+      api-key: ${GEMINI_API_KEY:}

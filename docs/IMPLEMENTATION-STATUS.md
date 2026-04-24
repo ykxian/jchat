@@ -6,7 +6,7 @@
 
 ## Current Stage
 
-- 当前目标：`Phase 9`
+- 当前目标：`Phase 10`
 - 当前状态：`可开始`
 - 最后更新：`2026-04-24`
 
@@ -685,3 +685,92 @@ curl -N http://localhost:8080/api/v1/chat/completions \
 - 当前离线能力仍是“只读”，未实现 PWA app shell 或 service worker，这仍属于后续阶段
 - 前端仍缺少自动化浏览器测试，离线场景需要人工再跑一轮
 - 当前仓库尚未提供用户自定义 API key 设置，真实上游聊天手工联调仍依赖服务端环境已预置可用 provider key；更完整的联调便利性放到 `Phase 9`
+
+---
+
+## Phase 9 已完成
+
+### 多 Provider 与 Settings
+
+- 已新增 [/backend/src/main/resources/db/migration/V2__user_api_keys.sql](/home/ykx/jchat/backend/src/main/resources/db/migration/V2__user_api_keys.sql)
+- 已新增 [/backend/src/main/java/com/jchat/apikey/controller/ApiKeyController.java](/home/ykx/jchat/backend/src/main/java/com/jchat/apikey/controller/ApiKeyController.java)
+- 已新增 [/backend/src/main/java/com/jchat/apikey/service/ApiKeyService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/apikey/service/ApiKeyService.java)
+- 已新增 [/backend/src/main/java/com/jchat/apikey/crypto/ApiKeyCipher.java](/home/ykx/jchat/backend/src/main/java/com/jchat/apikey/crypto/ApiKeyCipher.java)
+- 已新增 [/backend/src/main/java/com/jchat/llm/ProviderController.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/ProviderController.java)
+- 已新增 [/backend/src/main/java/com/jchat/llm/ProviderService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/ProviderService.java)
+- 已新增 [/backend/src/main/java/com/jchat/llm/ModelSpec.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/ModelSpec.java)
+- 已新增 [/backend/src/main/java/com/jchat/llm/anthropic/AnthropicProvider.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/anthropic/AnthropicProvider.java)
+- 已新增 [/backend/src/main/java/com/jchat/llm/gemini/GeminiProvider.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/gemini/GeminiProvider.java)
+- 已更新 [/backend/src/main/java/com/jchat/chat/service/ChatService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/service/ChatService.java)
+- 已更新 [/backend/src/main/java/com/jchat/chat/dto/ChatCompletionRequest.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/dto/ChatCompletionRequest.java)
+- 已更新 [/backend/src/main/java/com/jchat/config/AppProperties.java](/home/ykx/jchat/backend/src/main/java/com/jchat/config/AppProperties.java)
+- 已更新 [/backend/src/main/resources/application.yml](/home/ykx/jchat/backend/src/main/resources/application.yml)
+- 已新增 [/frontend/src/api/providers.ts](/home/ykx/jchat/frontend/src/api/providers.ts)
+- 已新增 [/frontend/src/api/apiKeys.ts](/home/ykx/jchat/frontend/src/api/apiKeys.ts)
+- 已更新 [/frontend/src/api/types.ts](/home/ykx/jchat/frontend/src/api/types.ts)
+- 已更新 [/frontend/src/api/conversations.ts](/home/ykx/jchat/frontend/src/api/conversations.ts)
+- 已更新 [/frontend/src/pages/SettingsPage.tsx](/home/ykx/jchat/frontend/src/pages/SettingsPage.tsx)
+- 已更新 [/frontend/src/pages/ChatPage.tsx](/home/ykx/jchat/frontend/src/pages/ChatPage.tsx)
+- 已更新 [/frontend/src/components/layout/AppShell.tsx](/home/ykx/jchat/frontend/src/components/layout/AppShell.tsx)
+- 已更新 [/frontend/src/styles/globals.css](/home/ykx/jchat/frontend/src/styles/globals.css)
+
+当前仓库已具备：
+
+- 服务端 `openai` / `anthropic` / `gemini` 三类 provider 适配器与统一 `supportedModels()` 元数据
+- `GET /api/v1/providers`，可返回 provider 可用性、模型列表、服务端 key 状态与用户 key 摘要
+- `GET/POST/DELETE /api/v1/api-keys`，用户可管理自己的加密 API key
+- `APP_CRYPTO_KEY` 驱动的 AES-GCM 加密存储，数据库仅保存密文和 `last4`
+- chat 请求新增 `apiKeyId`，可在单次对话时切换到用户自己的 provider key
+- Settings 页面可查看 provider 库存、模型列表并新增/删除个人 key
+- Chat 页面可按当前会话切换 provider、model 和凭据来源（服务端 key / 用户 key）
+
+### Phase 9 验证结果
+
+已完成验证：
+
+- `cd backend && ./gradlew test` 通过
+- `cd frontend && npm run build` 通过
+- 新增 backend 单测覆盖：
+  - `ApiKeyCipherTest`
+  - `ApiKeyServiceTest`
+  - `ApiKeyControllerTest`
+  - `ProviderServiceTest`
+  - `ProviderControllerTest`
+  - `AnthropicProviderTest`
+  - `GeminiProviderTest`
+
+### 手工验证建议
+
+在 backend 已启动、前端 dev server 可访问，并至少配置一个服务端 key 或一个用户 key 的前提下，可按以下方式验证：
+
+1. 登录后进入 `/settings`
+2. 确认 provider 卡片能显示 `OpenAI Compatible`、`Anthropic Claude`、`Google Gemini`
+3. 新增一条用户 API key，确认列表显示 `label` 与 `last4`
+4. 进入 `/chat`，创建或打开一个会话
+5. 在顶部切换 provider 与 model，确认会话头部和服务端持久化值同步更新
+6. 选择 `Credential` 为 `Server key` 或某个用户 key 后发送消息
+7. 确认流式响应仍正常返回，刷新页面后会话 provider/model 保持不变
+
+预期结果：
+
+- `/settings` 能看到 provider 可用性和用户 key 状态
+- 用户 key 不会回显明文，只显示标签和后 4 位
+- `/chat` 可切换 provider/model，并在发送时携带所选 `apiKeyId`
+- 已有 OpenAI-compatible 主链不被破坏，多 provider 扩展保持兼容
+
+### 完成判断
+
+按路线图交付物和本地验证结果判断，`Phase 9` 已完成，可以进入 `Phase 10`。
+
+原因：
+
+- 已落地 `AnthropicProvider` 与 `GeminiProvider`
+- 已提供 `/providers` 与用户 API key 加密存储接口
+- 已完成 Settings 页面和聊天页的 provider/model/key 切换接入
+- 已满足本阶段完成标准：服务端 key 可用、用户 key 可配置、前端可切换 provider/model
+
+保留风险：
+
+- `Anthropic` / `Gemini` 当前只覆盖 Phase 9 所需的最小文本流式链路，tools/function calling 仍保留到 `Phase 11`
+- 当前尚未提供用户级自定义 `baseUrl`，因此 OpenAI-compatible 的 BYOK 仍基于服务端配置的 endpoint
+- 真实上游联调仍建议手工跑一轮，以确认不同 provider 账户和模型命名与本地配置一致

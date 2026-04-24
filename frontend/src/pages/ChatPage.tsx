@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { streamChatCompletion } from "../api/chat";
 import { conversationsApi } from "../api/conversations";
-import type { Conversation, Message } from "../api/types";
+import { providersApi } from "../api/providers";
+import type { Conversation, Message, ProviderInfo } from "../api/types";
 import { Composer } from "../components/chat/Composer";
 import { MessageList } from "../components/chat/MessageList";
 import { StreamingMessage } from "../components/chat/StreamingMessage";
@@ -49,6 +50,16 @@ function getConversationHeading(conversation: Conversation | null) {
   return conversation?.title?.trim() || "New conversation";
 }
 
+function getDefaultSelection(providers: ProviderInfo[]) {
+  const available = providers.find((provider) => provider.available) ?? providers[0];
+  const model = available?.models[0];
+
+  return {
+    model: model?.id ?? DEFAULT_MODEL,
+    provider: available?.name ?? DEFAULT_PROVIDER
+  };
+}
+
 export function ChatPage() {
   const navigate = useNavigate();
   const { conversationId } = useParams();
@@ -57,6 +68,8 @@ export function ChatPage() {
     typeof navigator === "undefined" ? true : navigator.onLine
   );
   const [pageError, setPageError] = useState<string | null>(null);
+  const [providers, setProviders] = useState<ProviderInfo[]>([]);
+  const [selectedApiKeyId, setSelectedApiKeyId] = useState<string>("");
   const conversations = useConversationStore((state) => state.items);
   const currentId = useConversationStore((state) => state.currentId);
   const messagesByConversation = useConversationStore((state) => state.messagesByConversation);
@@ -69,6 +82,8 @@ export function ChatPage() {
     conversations.find((conversation) => conversation.id === currentId) ?? null;
   const messages = currentId ? messagesByConversation[currentId] ?? [] : [];
   const isStreamingCurrent = stream?.conversationId === currentId && stream.isStreaming;
+  const currentProviderInfo =
+    providers.find((provider) => provider.name === currentConversation?.provider) ?? null;
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -89,6 +104,29 @@ export function ChatPage() {
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProviders() {
+      try {
+        const response = await providersApi.list();
+        if (!cancelled) {
+          setProviders(response.items);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setPageError(error instanceof Error ? error.message : "Failed to load providers");
+        }
+      }
+    }
+
+    void loadProviders();
+
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -207,6 +245,17 @@ export function ChatPage() {
     };
   }, [conversationId, userId]);
 
+  useEffect(() => {
+    if (!currentProviderInfo) {
+      setSelectedApiKeyId("");
+      return;
+    }
+
+    setSelectedApiKeyId((current) =>
+      currentProviderInfo.userKeys.some((apiKey) => apiKey.id === current) ? current : ""
+    );
+  }, [currentProviderInfo]);
+
   async function handleCreateConversation() {
     if (isCreatingConversation || !isOnline || !userId) {
       return;
@@ -216,9 +265,10 @@ export function ChatPage() {
     conversationStore.setCreatingConversation(true);
 
     try {
+      const defaults = getDefaultSelection(providers);
       const conversation = await conversationsApi.create({
-        model: DEFAULT_MODEL,
-        provider: DEFAULT_PROVIDER,
+        model: defaults.model,
+        provider: defaults.provider,
         title: null
       });
       conversationStore.upsertConversation(conversation);
@@ -266,9 +316,10 @@ export function ChatPage() {
       let targetConversationId = currentId;
 
       if (!targetConversationId) {
+        const defaults = getDefaultSelection(providers);
         const conversation = await conversationsApi.create({
-          model: DEFAULT_MODEL,
-          provider: DEFAULT_PROVIDER,
+          model: defaults.model,
+          provider: defaults.provider,
           title: null
         });
         conversationStore.upsertConversation(conversation);
@@ -292,6 +343,7 @@ export function ChatPage() {
       await streamChatCompletion(
         {
           conversationId: targetConversationId,
+          apiKeyId: selectedApiKeyId || null,
           messages: [{ content, role: "user" }],
           model: currentConversation?.model ?? DEFAULT_MODEL,
           provider: currentConversation?.provider ?? DEFAULT_PROVIDER,
@@ -353,6 +405,32 @@ export function ChatPage() {
     streamStore.abort();
   }
 
+  async function handleUpdateConversationSelection(patch: {
+    provider?: string;
+    model?: string;
+  }) {
+    if (!currentConversation || isStreamingCurrent) {
+      return;
+    }
+
+    try {
+      const nextConversation = await conversationsApi.update(currentConversation.id, patch);
+      conversationStore.upsertConversation(nextConversation);
+
+      if (userId) {
+        await chatCache.upsertConversation(userId, nextConversation);
+      }
+
+      if (patch.provider && patch.provider !== currentConversation.provider) {
+        setSelectedApiKeyId("");
+      }
+
+      setPageError(null);
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : "Failed to update conversation");
+    }
+  }
+
   return (
     <div className="chat-layout">
       <Sidebar
@@ -377,11 +455,77 @@ export function ChatPage() {
             </p>
           </div>
           {currentConversation ? (
-            <div className="status-list">
+            <div className="chat-toolbar">
+              <div className="chat-toolbar__controls">
+                <label className="toolbar-field">
+                  <span>Provider</span>
+                  <select
+                    disabled={Boolean(isStreamingCurrent)}
+                    onChange={(event) => {
+                      const provider = providers.find(
+                        (candidate) => candidate.name === event.target.value
+                      );
+                      const nextModel = provider?.models[0]?.id ?? currentConversation.model;
+                      void handleUpdateConversationSelection({
+                        model: nextModel,
+                        provider: event.target.value
+                      });
+                    }}
+                    value={currentConversation.provider}
+                  >
+                    {providers.map((provider) => (
+                      <option
+                        disabled={!provider.available}
+                        key={provider.name}
+                        value={provider.name}
+                      >
+                        {provider.displayName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="toolbar-field">
+                  <span>Model</span>
+                  <select
+                    disabled={Boolean(isStreamingCurrent)}
+                    onChange={(event) =>
+                      void handleUpdateConversationSelection({
+                        model: event.target.value
+                      })
+                    }
+                    value={currentConversation.model}
+                  >
+                    {(currentProviderInfo?.models ?? []).map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.displayName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="toolbar-field">
+                  <span>Credential</span>
+                  <select
+                    disabled={Boolean(isStreamingCurrent)}
+                    onChange={(event) => setSelectedApiKeyId(event.target.value)}
+                    value={selectedApiKeyId}
+                  >
+                    <option value="">Server key</option>
+                    {(currentProviderInfo?.userKeys ?? []).map((apiKey) => (
+                      <option key={apiKey.id} value={apiKey.id}>
+                        {apiKey.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="status-list">
               <span>{currentConversation.messageCount} messages</span>
               {currentConversation.lastMessageAt ? (
                 <span>Updated {new Date(currentConversation.lastMessageAt).toLocaleString()}</span>
               ) : null}
+              </div>
             </div>
           ) : null}
         </header>

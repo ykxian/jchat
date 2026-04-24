@@ -24,4 +24,8 @@ public class LlmProviderRegistry {
         }
         return provider;
     }
+
+    public List<LlmProvider> list() {
+        return providersByName.values().stream().toList();
+    }
 }

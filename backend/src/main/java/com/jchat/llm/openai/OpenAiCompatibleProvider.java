@@ -6,6 +6,7 @@ import com.jchat.common.api.ApiException;
 import com.jchat.common.api.ErrorCode;
 import com.jchat.config.AppProperties;
 import com.jchat.llm.LlmProvider;
+import com.jchat.llm.ModelSpec;
 import com.jchat.llm.dto.ChatChunk;
 import com.jchat.llm.dto.ChatRequest;
 import com.jchat.llm.dto.FinishReason;
@@ -45,6 +46,15 @@ public class OpenAiCompatibleProvider implements LlmProvider {
     @Override
     public String name() {
         return "openai";
+    }
+
+    @Override
+    public List<ModelSpec> supportedModels() {
+        return List.of(
+                new ModelSpec("gpt-4o-mini", "GPT-4o mini", 128000, false),
+                new ModelSpec("gpt-4o", "GPT-4o", 128000, false),
+                new ModelSpec("gpt-4.1", "GPT-4.1", 128000, false)
+        );
     }
 
     @Override

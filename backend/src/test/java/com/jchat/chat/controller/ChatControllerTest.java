@@ -69,7 +69,8 @@ class ChatControllerTest {
                 List.of(new ChatCompletionMessage("user", "hello")),
                 0.7,
                 1.0,
-                256
+                256,
+                null
         );
 
         SseEmitter emitter = new SseEmitter();

@@ -1,5 +1,6 @@
 package com.jchat.chat.service;
 
+import com.jchat.apikey.service.ApiKeyService;
 import com.jchat.chat.dto.ChatCompletionMessage;
 import com.jchat.chat.dto.ChatCompletionRequest;
 import com.jchat.chat.dto.SseMessage;
@@ -38,6 +39,7 @@ public class ChatService {
     private final LlmProviderRegistry llmProviderRegistry;
     private final SseEventWriter sseEventWriter;
     private final AppProperties appProperties;
+    private final ApiKeyService apiKeyService;
 
     public ChatService(
             ConversationService conversationService,
@@ -45,7 +47,8 @@ public class ChatService {
             PromptBuilder promptBuilder,
             LlmProviderRegistry llmProviderRegistry,
             SseEventWriter sseEventWriter,
-            AppProperties appProperties
+            AppProperties appProperties,
+            ApiKeyService apiKeyService
     ) {
         this.conversationService = conversationService;
         this.messageService = messageService;
@@ -53,6 +56,7 @@ public class ChatService {
         this.llmProviderRegistry = llmProviderRegistry;
         this.sseEventWriter = sseEventWriter;
         this.appProperties = appProperties;
+        this.apiKeyService = apiKeyService;
     }
 
     public SseEmitter complete(Long userId, ChatCompletionRequest request) {
@@ -75,6 +79,8 @@ public class ChatService {
                 request.topP(),
                 request.maxTokens()
         );
+        Long apiKeyId = parseNullableId(request.apiKeyId(), "apiKeyId");
+        String apiKey = apiKeyService.resolveDecryptedKey(userId, providerName, apiKeyId);
 
         String requestId = RequestIds.getCurrentRequestId();
         SseEmitter emitter = new SseEmitter(0L);
@@ -92,7 +98,7 @@ public class ChatService {
             throw new ApiException(ErrorCode.INTERNAL_ERROR, "Failed to initialize SSE stream");
         }
 
-        Disposable stream = provider.stream(chatRequest, new ProviderContext(null, null, requestId))
+        Disposable stream = provider.stream(chatRequest, new ProviderContext(apiKey, null, requestId))
                 .subscribe(
                         chunk -> handleChunk(emitter, chunk, completed, clientDisconnected, assistantBuffer, promptTokens, completionTokens, finishReason),
                         error -> handleStreamError(emitter, error, completed, clientDisconnected),
@@ -139,9 +145,15 @@ public class ChatService {
                     sseEventWriter.sendMessage(emitter, SseMessage.delta(delta.content()));
                 }
                 case ChatChunk.Usage usage -> {
-                    promptTokens.set(usage.promptTokens());
-                    completionTokens.set(usage.completionTokens());
-                    sseEventWriter.sendMessage(emitter, SseMessage.usage(usage.promptTokens(), usage.completionTokens()));
+                    int nextPromptTokens = usage.promptTokens() == 0 && promptTokens.get() != null
+                            ? promptTokens.get()
+                            : usage.promptTokens();
+                    int nextCompletionTokens = usage.completionTokens() == 0 && completionTokens.get() != null
+                            ? completionTokens.get()
+                            : usage.completionTokens();
+                    promptTokens.set(nextPromptTokens);
+                    completionTokens.set(nextCompletionTokens);
+                    sseEventWriter.sendMessage(emitter, SseMessage.usage(nextPromptTokens, nextCompletionTokens));
                 }
                 case ChatChunk.Done done -> {
                     finishReason.set(done.reason().name().toLowerCase());
@@ -248,10 +260,21 @@ public class ChatService {
     }
 
     private Long parseConversationId(String conversationId) {
+        return parseRequiredId(conversationId, "conversationId");
+    }
+
+    private Long parseNullableId(String rawValue, String fieldName) {
+        if (!StringUtils.hasText(rawValue)) {
+            return null;
+        }
+        return parseRequiredId(rawValue, fieldName);
+    }
+
+    private Long parseRequiredId(String rawValue, String fieldName) {
         try {
-            return Long.parseLong(conversationId);
+            return Long.parseLong(rawValue);
         } catch (NumberFormatException ex) {
-            throw new ApiException(ErrorCode.VALIDATION_FAILED, "conversationId must be a numeric string");
+            throw new ApiException(ErrorCode.VALIDATION_FAILED, fieldName + " must be a numeric string");
         }
     }
 

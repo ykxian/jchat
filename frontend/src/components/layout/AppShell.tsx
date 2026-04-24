@@ -63,7 +63,7 @@ export function AppShell() {
           <ul className="feature-list">
             <li>Conversation list and message reload after refresh</li>
             <li>Streaming chat linked to authenticated requests</li>
-            <li>Settings and provider expansion in later phases</li>
+            <li>Provider switching and encrypted BYOK settings</li>
           </ul>
         </section>
       </aside>
@@ -75,7 +75,7 @@ export function AppShell() {
             <h2>React SPA</h2>
           </div>
           <div className="button-row">
-            <span className="pill">Auth + conversations + SSE</span>
+            <span className="pill">Auth + conversations + providers + SSE</span>
             <button
               className="button button--ghost"
               disabled={isLoggingOut}

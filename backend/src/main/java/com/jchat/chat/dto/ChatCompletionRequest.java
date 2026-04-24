@@ -17,6 +17,8 @@ public record ChatCompletionRequest(
         List<@Valid ChatCompletionMessage> messages,
         Double temperature,
         Double topP,
-        Integer maxTokens
+        Integer maxTokens,
+        @Size(max = 50, message = "apiKeyId must be at most 50 characters")
+        String apiKeyId
 ) {
 }

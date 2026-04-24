@@ -9,5 +9,7 @@ public interface LlmProvider {
 
     String name();
 
+    java.util.List<ModelSpec> supportedModels();
+
     Flux<ChatChunk> stream(ChatRequest request, ProviderContext context);
 }

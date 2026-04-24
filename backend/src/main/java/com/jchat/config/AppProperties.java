@@ -13,6 +13,7 @@ public class AppProperties {
     private String description = "多用户 AI 对话应用（仿 NextChat）";
     private final Cors cors = new Cors();
     private final Auth auth = new Auth();
+    private final Crypto crypto = new Crypto();
     private final Chat chat = new Chat();
     private final Llm llm = new Llm();
 
@@ -38,6 +39,10 @@ public class AppProperties {
 
     public Auth getAuth() {
         return auth;
+    }
+
+    public Crypto getCrypto() {
+        return crypto;
     }
 
     public Chat getChat() {
@@ -120,6 +125,20 @@ public class AppProperties {
         }
     }
 
+    public static class Crypto {
+
+        private String key =
+                "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=";
+
+        public String getKey() {
+            return key;
+        }
+
+        public void setKey(String key) {
+            this.key = key;
+        }
+    }
+
     public static class Chat {
 
         private String defaultProvider = "openai";
@@ -141,6 +160,8 @@ public class AppProperties {
         private Duration responseTimeout = Duration.ofSeconds(300);
         private DataSize maxInMemorySize = DataSize.ofMegabytes(10);
         private final Openai openai = new Openai();
+        private final Anthropic anthropic = new Anthropic();
+        private final Gemini gemini = new Gemini();
 
         public int getMaxConnections() {
             return maxConnections;
@@ -185,11 +206,63 @@ public class AppProperties {
         public Openai getOpenai() {
             return openai;
         }
+
+        public Anthropic getAnthropic() {
+            return anthropic;
+        }
+
+        public Gemini getGemini() {
+            return gemini;
+        }
     }
 
     public static class Openai {
 
         private String baseUrl = "https://api.openai.com/v1";
+        private String apiKey;
+
+        public String getBaseUrl() {
+            return baseUrl;
+        }
+
+        public void setBaseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+        }
+
+        public String getApiKey() {
+            return apiKey;
+        }
+
+        public void setApiKey(String apiKey) {
+            this.apiKey = apiKey;
+        }
+    }
+
+    public static class Anthropic {
+
+        private String baseUrl = "https://api.anthropic.com";
+        private String apiKey;
+
+        public String getBaseUrl() {
+            return baseUrl;
+        }
+
+        public void setBaseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+        }
+
+        public String getApiKey() {
+            return apiKey;
+        }
+
+        public void setApiKey(String apiKey) {
+            this.apiKey = apiKey;
+        }
+    }
+
+    public static class Gemini {
+
+        private String baseUrl = "https://generativelanguage.googleapis.com/v1beta";
         private String apiKey;
 
         public String getBaseUrl() {

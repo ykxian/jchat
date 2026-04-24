@@ -3,7 +3,8 @@ import type {
   Conversation,
   CreateConversationPayload,
   CursorPage,
-  Message
+  Message,
+  UpdateConversationPayload
 } from "./types";
 
 export const conversationsApi = {
@@ -22,5 +23,8 @@ export const conversationsApi = {
     return apiClient.get<CursorPage<Message>>(`/conversations/${id}/messages`, {
       query: { limit }
     });
+  },
+  update(id: string, payload: UpdateConversationPayload) {
+    return apiClient.patch<Conversation>(`/conversations/${id}`, payload);
   }
 };

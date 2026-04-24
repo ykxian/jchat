@@ -39,6 +39,15 @@ export interface CreateConversationPayload {
   systemPrompt?: string | null;
 }
 
+export interface UpdateConversationPayload {
+  title?: string | null;
+  pinned?: boolean | null;
+  archived?: boolean | null;
+  systemPrompt?: string | null;
+  provider?: string | null;
+  model?: string | null;
+}
+
 export interface ChatCompletionPayload {
   conversationId: string;
   provider?: string | null;
@@ -50,6 +59,7 @@ export interface ChatCompletionPayload {
   temperature?: number;
   topP?: number;
   maxTokens?: number | null;
+  apiKeyId?: string | null;
 }
 
 export interface SseEnvelope {
@@ -62,4 +72,47 @@ export interface SseEnvelope {
   finishReason?: string | null;
   code?: string | null;
   message?: string | null;
+}
+
+export interface ModelSpec {
+  id: string;
+  displayName: string;
+  contextWindow: number;
+  supportsTools: boolean;
+}
+
+export interface ProviderKeySummary {
+  id: string;
+  label: string;
+}
+
+export interface ProviderInfo {
+  name: string;
+  displayName: string;
+  available: boolean;
+  models: ModelSpec[];
+  hasServerKey: boolean;
+  userKeys: ProviderKeySummary[];
+}
+
+export interface ProviderListResponse {
+  items: ProviderInfo[];
+}
+
+export interface ApiKeyRecord {
+  id: string;
+  provider: string;
+  label: string;
+  last4: string;
+  createdAt: string | null;
+}
+
+export interface ApiKeyListResponse {
+  items: ApiKeyRecord[];
+}
+
+export interface CreateApiKeyPayload {
+  provider: string;
+  label: string;
+  key: string;
 }
