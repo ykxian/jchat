@@ -6,9 +6,9 @@
 
 ## Current Stage
 
-- 当前目标：`Phase 6`
-- 当前状态：`待开始`
-- 最后更新：`2026-04-23`
+- 当前目标：`Phase 7`
+- 当前状态：`可开始`
+- 最后更新：`2026-04-24`
 
 ---
 
@@ -434,3 +434,112 @@ Phase 0 主验收项已经完成：
 1. [AGENTS.md](/home/ykx/jchat/AGENTS.md)
 2. [docs/CODEX-IMPLEMENTATION-ROADMAP.md](/home/ykx/jchat/docs/CODEX-IMPLEMENTATION-ROADMAP.md)
 3. [docs/IMPLEMENTATION-STATUS.md](/home/ykx/jchat/docs/IMPLEMENTATION-STATUS.md)
+
+---
+
+## Phase 6 已完成
+
+### chat 主链最小闭环
+
+- 已新增 [/backend/src/main/java/com/jchat/chat/controller/ChatController.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/controller/ChatController.java)
+- 已新增 [/backend/src/main/java/com/jchat/chat/dto/ChatCompletionMessage.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/dto/ChatCompletionMessage.java)
+- 已新增 [/backend/src/main/java/com/jchat/chat/dto/ChatCompletionRequest.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/dto/ChatCompletionRequest.java)
+- 已新增 [/backend/src/main/java/com/jchat/chat/dto/SseMessage.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/dto/SseMessage.java)
+- 已新增 [/backend/src/main/java/com/jchat/chat/service/ChatService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/service/ChatService.java)
+- 已新增 [/backend/src/main/java/com/jchat/chat/service/PromptBuilder.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/service/PromptBuilder.java)
+- 已新增 [/backend/src/main/java/com/jchat/chat/service/SseEventWriter.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/service/SseEventWriter.java)
+- 已新增 [/backend/src/main/java/com/jchat/llm/LlmProvider.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/LlmProvider.java)
+- 已新增 [/backend/src/main/java/com/jchat/llm/LlmProviderRegistry.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/LlmProviderRegistry.java)
+- 已新增 [/backend/src/main/java/com/jchat/llm/dto/ChatChunk.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/dto/ChatChunk.java)
+- 已新增 [/backend/src/main/java/com/jchat/llm/dto/ChatMessage.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/dto/ChatMessage.java)
+- 已新增 [/backend/src/main/java/com/jchat/llm/dto/ChatRequest.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/dto/ChatRequest.java)
+- 已新增 [/backend/src/main/java/com/jchat/llm/dto/FinishReason.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/dto/FinishReason.java)
+- 已新增 [/backend/src/main/java/com/jchat/llm/dto/ProviderContext.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/dto/ProviderContext.java)
+- 已新增 [/backend/src/main/java/com/jchat/llm/openai/OpenAiCompatibleProvider.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/openai/OpenAiCompatibleProvider.java)
+- 已新增 [/backend/src/main/java/com/jchat/llm/openai/OpenAiRequest.java](/home/ykx/jchat/backend/src/main/java/com/jchat/llm/openai/OpenAiRequest.java)
+- 已新增 [/backend/src/test/java/com/jchat/chat/controller/ChatControllerTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/chat/controller/ChatControllerTest.java)
+- 已新增 [/backend/src/test/java/com/jchat/chat/service/ChatServiceTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/chat/service/ChatServiceTest.java)
+- 已新增 [/backend/src/test/java/com/jchat/llm/openai/OpenAiCompatibleProviderTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/llm/openai/OpenAiCompatibleProviderTest.java)
+- 已更新 [/backend/src/main/java/com/jchat/config/AppProperties.java](/home/ykx/jchat/backend/src/main/java/com/jchat/config/AppProperties.java)
+- 已更新 [/backend/src/main/java/com/jchat/conversation/repository/MessageRepository.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/repository/MessageRepository.java)
+- 已更新 [/backend/src/main/java/com/jchat/conversation/service/ConversationService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/service/ConversationService.java)
+- 已更新 [/backend/src/main/java/com/jchat/conversation/service/MessageService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/service/MessageService.java)
+- 已更新 [/backend/src/main/resources/application.yml](/home/ykx/jchat/backend/src/main/resources/application.yml)
+- 已更新 [/backend/src/test/java/com/jchat/conversation/service/MessageServiceTest.java](/home/ykx/jchat/backend/src/test/java/com/jchat/conversation/service/MessageServiceTest.java)
+
+当前后端已具备：
+
+- 单一 `openai` provider 的 `LlmProvider` 抽象与注册
+- `OpenAiCompatibleProvider` 基于 `WebClient` 调用 `/chat/completions`，解析上游 SSE delta / usage / finish reason
+- `POST /api/v1/chat/completions` SSE 出口
+- 基于 conversation 历史与 `systemPrompt` 的最小 `PromptBuilder`
+- 在 chat 主链中持久化当前 `user` message 与最终 `assistant` message
+- `assistant` message 写入 `parentId`、`provider`、`model`、`requestId`、`promptTokens`、`completionTokens`、`finishReason`
+- 会话 `messageCount`、`lastMessageAt` 自动维护，首条 user message 自动生成 title
+- 仅按 Phase 6 范围实现：未接 tools / files / masks / multi-provider / user api key
+
+### Phase 6 验证结果
+
+已完成验证：
+
+- `cd backend && ./gradlew test` 通过
+- `OpenAiCompatibleProviderTest` 覆盖 OpenAI-compatible SSE chunk 解析
+- `ChatServiceTest` 覆盖 user/assistant message 落库、SSE 事件发送、provider 失败分支
+- `ChatControllerTest` 覆盖 `/api/v1/chat/completions` 的 SSE 响应
+- `MessageServiceTest` 额外覆盖会话统计与 assistant usage / finishReason 写入
+- 真实本地 HTTP 验证通过：`/api/v1/health`、register/login/`/auth/me`、`POST /conversations`、`GET /conversations`、`GET /conversations/{id}/messages`
+- 真实本地 HTTP 验证通过：当上游返回 `502 Upstream service temporarily unavailable` 时，`/api/v1/chat/completions` 会返回 `event:error`，且 `user` message 会落库
+
+### 手工验证建议
+
+在已配置 `OPENAI_API_KEY`、数据库与 Redis 已启动的前提下，可用以下方式验证真实 SSE：
+
+```bash
+cd backend
+./gradlew bootRun
+```
+
+另起终端，先完成注册 / 登录拿到 access token 和 conversation id，再执行：
+
+```bash
+curl -N http://localhost:8080/api/v1/chat/completions \
+  -H 'Authorization: Bearer <access-token>' \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: text/event-stream' \
+  -d '{
+    "conversationId":"<conversation-id>",
+    "provider":"openai",
+    "model":"gpt-4o-mini",
+    "messages":[{"role":"user","content":"解释一下 virtual thread"}],
+    "temperature":0.7,
+    "topP":1.0
+  }'
+```
+
+预期结果：
+
+- 返回 `event: message` 的 SSE 流，包含 `start` / `delta` / `usage` / `done`
+- `messages` 表新增一条 `user` 与一条 `assistant`
+- 对应 `conversation.message_count`、`last_message_at` 被更新
+
+### 2026-04-24 收尾修复
+
+- 已修复 [/backend/src/main/java/com/jchat/conversation/repository/ConversationRepository.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/repository/ConversationRepository.java) 的 cursor 分页 SQL，避免空 cursor 时 PostgreSQL 参数类型推断失败
+- 已修复 [/backend/src/main/java/com/jchat/conversation/repository/MessageRepository.java](/home/ykx/jchat/backend/src/main/java/com/jchat/conversation/repository/MessageRepository.java) 的同类分页 SQL 问题
+- 已修复 [/backend/src/main/java/com/jchat/chat/service/ChatService.java](/home/ykx/jchat/backend/src/main/java/com/jchat/chat/service/ChatService.java) 的 SSE 错误收尾，保证上游失败时向前端发 `event:error`
+- 已修复 [/backend/src/main/java/com/jchat/auth/security/SecurityConfig.java](/home/ykx/jchat/backend/src/main/java/com/jchat/auth/security/SecurityConfig.java) 的 `ERROR` / `ASYNC` dispatcher 放行，减少 SSE 客户端断开后的安全链噪音
+
+### 完成判断
+
+按代码范围与本地可验证项判断，`Phase 6` 已完成，可以进入 `Phase 7`。
+
+原因：
+
+- 路线图要求的交付物 `LlmProvider`、`OpenAiCompatibleProvider`、`PromptBuilder`、`ChatService`、`/chat/completions` 均已存在
+- 本地 auth / conversations / messages / chat error-path 已真实联通
+- 成功路径下的 assistant 落库已由单元测试覆盖
+
+保留风险：
+
+- 由于当前外部上游服务不稳定，尚未在真实上游成功返回的情况下现场复核 `assistant delta + assistant message 持久化成功`
+- 这属于外部依赖验证缺口，不是当前代码范围内已知阻塞项

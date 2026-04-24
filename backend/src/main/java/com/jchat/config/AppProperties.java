@@ -13,6 +13,7 @@ public class AppProperties {
     private String description = "多用户 AI 对话应用（仿 NextChat）";
     private final Cors cors = new Cors();
     private final Auth auth = new Auth();
+    private final Chat chat = new Chat();
     private final Llm llm = new Llm();
 
     public String getName() {
@@ -37,6 +38,10 @@ public class AppProperties {
 
     public Auth getAuth() {
         return auth;
+    }
+
+    public Chat getChat() {
+        return chat;
     }
 
     public Llm getLlm() {
@@ -115,6 +120,19 @@ public class AppProperties {
         }
     }
 
+    public static class Chat {
+
+        private String defaultProvider = "openai";
+
+        public String getDefaultProvider() {
+            return defaultProvider;
+        }
+
+        public void setDefaultProvider(String defaultProvider) {
+            this.defaultProvider = defaultProvider;
+        }
+    }
+
     public static class Llm {
 
         private int maxConnections = 200;
@@ -122,6 +140,7 @@ public class AppProperties {
         private Duration connectTimeout = Duration.ofSeconds(5);
         private Duration responseTimeout = Duration.ofSeconds(300);
         private DataSize maxInMemorySize = DataSize.ofMegabytes(10);
+        private final Openai openai = new Openai();
 
         public int getMaxConnections() {
             return maxConnections;
@@ -161,6 +180,32 @@ public class AppProperties {
 
         public void setMaxInMemorySize(DataSize maxInMemorySize) {
             this.maxInMemorySize = maxInMemorySize;
+        }
+
+        public Openai getOpenai() {
+            return openai;
+        }
+    }
+
+    public static class Openai {
+
+        private String baseUrl = "https://api.openai.com/v1";
+        private String apiKey;
+
+        public String getBaseUrl() {
+            return baseUrl;
+        }
+
+        public void setBaseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+        }
+
+        public String getApiKey() {
+            return apiKey;
+        }
+
+        public void setApiKey(String apiKey) {
+            this.apiKey = apiKey;
         }
     }
 }

@@ -3,6 +3,7 @@ package com.jchat.conversation.service;
 import com.jchat.common.api.ApiException;
 import com.jchat.common.api.ErrorCode;
 import com.jchat.common.jpa.CursorPage;
+import com.jchat.common.jpa.InstantIdCursor;
 import com.jchat.conversation.dto.ConversationResponse;
 import com.jchat.conversation.dto.CreateConversationRequest;
 import com.jchat.conversation.dto.UpdateConversationRequest;
@@ -75,7 +76,7 @@ class ConversationServiceTest {
         Conversation second = conversation(4L, 7L, Instant.parse("2026-04-23T10:14:30Z"));
         Conversation third = conversation(3L, 7L, Instant.parse("2026-04-23T10:13:30Z"));
 
-        when(conversationRepository.findPage(eq(7L), eq(false), eq(null), eq(null), eq(null), any()))
+        when(conversationRepository.findFirstPage(eq(7L), eq(false), eq(null), any()))
                 .thenReturn(List.of(first, second, third));
 
         CursorPage<ConversationResponse> page = conversationService.list(7L, null, 2, false, null);
@@ -84,6 +85,32 @@ class ConversationServiceTest {
         assertNotNull(page.nextCursor());
         assertEquals("5", page.items().get(0).id());
         assertEquals("4", page.items().get(1).id());
+    }
+
+    @Test
+    void listUsesCursorQueryWhenCursorProvided() {
+        Conversation first = conversation(4L, 7L, Instant.parse("2026-04-23T10:14:30Z"));
+
+        when(conversationRepository.findPageAfter(
+                eq(7L),
+                eq(false),
+                eq(null),
+                eq(Instant.parse("2026-04-23T10:15:30Z")),
+                eq(5L),
+                any()
+        )).thenReturn(List.of(first));
+
+        CursorPage<ConversationResponse> page = conversationService.list(
+                7L,
+                InstantIdCursor.encode(Instant.parse("2026-04-23T10:15:30Z"), 5L),
+                20,
+                false,
+                null
+        );
+
+        assertEquals(1, page.items().size());
+        assertEquals("4", page.items().get(0).id());
+        assertNull(page.nextCursor());
     }
 
     @Test

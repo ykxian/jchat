@@ -18,14 +18,27 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
             where c.userId = :userId
               and (:archived is null or c.archived = :archived)
               and (:pinned is null or c.pinned = :pinned)
+            order by c.updatedAt desc, c.id desc
+            """)
+    List<Conversation> findFirstPage(
+            @Param("userId") Long userId,
+            @Param("archived") Boolean archived,
+            @Param("pinned") Boolean pinned,
+            Pageable pageable
+    );
+
+    @Query("""
+            select c from Conversation c
+            where c.userId = :userId
+              and (:archived is null or c.archived = :archived)
+              and (:pinned is null or c.pinned = :pinned)
               and (
-                    :cursorUpdatedAt is null
-                    or c.updatedAt < :cursorUpdatedAt
+                    c.updatedAt < :cursorUpdatedAt
                     or (c.updatedAt = :cursorUpdatedAt and c.id < :cursorId)
               )
             order by c.updatedAt desc, c.id desc
             """)
-    List<Conversation> findPage(
+    List<Conversation> findPageAfter(
             @Param("userId") Long userId,
             @Param("archived") Boolean archived,
             @Param("pinned") Boolean pinned,

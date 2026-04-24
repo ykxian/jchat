@@ -60,9 +60,14 @@ app:
     refresh-cookie-name: ${AUTH_REFRESH_COOKIE_NAME:refresh}
     refresh-cookie-secure: ${AUTH_REFRESH_COOKIE_SECURE:false}
     refresh-cookie-same-site: ${AUTH_REFRESH_COOKIE_SAME_SITE:Lax}
+  chat:
+    default-provider: ${CHAT_DEFAULT_PROVIDER:openai}
   llm:
     max-connections: 200
     pending-acquire-timeout: 10s
     connect-timeout: 5s
     response-timeout: 300s
     max-in-memory-size: 10MB
+    openai:
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+      api-key: ${OPENAI_API_KEY:}

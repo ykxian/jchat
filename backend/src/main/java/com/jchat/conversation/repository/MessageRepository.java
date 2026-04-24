@@ -13,17 +13,33 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     @Query("""
             select m from Message m
             where m.conversationId = :conversationId
+            order by m.createdAt asc, m.id asc
+            """)
+    List<Message> findFirstPage(
+            @Param("conversationId") Long conversationId,
+            Pageable pageable
+    );
+
+    @Query("""
+            select m from Message m
+            where m.conversationId = :conversationId
               and (
-                    :cursorCreatedAt is null
-                    or m.createdAt > :cursorCreatedAt
+                    m.createdAt > :cursorCreatedAt
                     or (m.createdAt = :cursorCreatedAt and m.id > :cursorId)
               )
             order by m.createdAt asc, m.id asc
             """)
-    List<Message> findPage(
+    List<Message> findPageAfter(
             @Param("conversationId") Long conversationId,
             @Param("cursorCreatedAt") Instant cursorCreatedAt,
             @Param("cursorId") Long cursorId,
             Pageable pageable
     );
+
+    @Query("""
+            select m from Message m
+            where m.conversationId = :conversationId
+            order by m.createdAt asc, m.id asc
+            """)
+    List<Message> findAllByConversationIdOrderByCreatedAtAscIdAsc(@Param("conversationId") Long conversationId);
 }

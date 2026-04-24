@@ -39,12 +39,19 @@ public class ConversationService {
     @Transactional(readOnly = true)
     public CursorPage<ConversationResponse> list(Long userId, String cursor, int limit, Boolean archived, Boolean pinned) {
         InstantIdCursor.CursorValue cursorValue = InstantIdCursor.decodeNullable(cursor);
-        List<Conversation> conversations = conversationRepository.findPage(
+        List<Conversation> conversations = cursorValue == null
+                ? conversationRepository.findFirstPage(
                 userId,
                 archived,
                 pinned,
-                cursorValue == null ? null : cursorValue.instant(),
-                cursorValue == null ? null : cursorValue.id(),
+                PageRequest.of(0, limit + 1)
+        )
+                : conversationRepository.findPageAfter(
+                userId,
+                archived,
+                pinned,
+                cursorValue.instant(),
+                cursorValue.id(),
                 PageRequest.of(0, limit + 1)
         );
 
@@ -92,6 +99,12 @@ public class ConversationService {
         Conversation conversation = requireConversation(userId, id);
         conversation.setDeletedAt(Instant.now());
         conversationRepository.save(conversation);
+    }
+
+    public Conversation updateModelSelection(Conversation conversation, String provider, String model) {
+        conversation.setProvider(normalizeRequiredText(provider));
+        conversation.setModel(normalizeRequiredText(model));
+        return conversationRepository.save(conversation);
     }
 
     @Transactional(readOnly = true)
