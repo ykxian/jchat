@@ -4,6 +4,7 @@ import { masksApi } from "../api/masks";
 import { conversationsApi } from "../api/conversations";
 import type { CreateMaskPayload, Mask, ProviderInfo } from "../api/types";
 import { providersApi } from "../api/providers";
+import { usePreferences } from "../preferences/preferences";
 
 const EMPTY_FORM: CreateMaskPayload = {
   avatar: "",
@@ -38,6 +39,7 @@ function getDefaultSelection(providers: ProviderInfo[]) {
 
 export function MasksPage() {
   const navigate = useNavigate();
+  const { copy } = usePreferences();
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
   const [masks, setMasks] = useState<Mask[]>([]);
   const [editingMaskId, setEditingMaskId] = useState<string | null>(null);
@@ -64,7 +66,7 @@ export function MasksPage() {
         setPageError(null);
       } catch (error) {
         if (!cancelled) {
-          setPageError(error instanceof Error ? error.message : "Failed to load masks");
+          setPageError(error instanceof Error ? error.message : copy.masks.loadError);
         }
       } finally {
         if (!cancelled) {
@@ -78,7 +80,7 @@ export function MasksPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [copy.masks.loadError]);
 
   async function refreshMasks(query?: string) {
     const response = await masksApi.list({ q: query ?? search });
@@ -128,7 +130,7 @@ export function MasksPage() {
       resetForm();
       setPageError(null);
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : "Failed to save mask");
+      setPageError(error instanceof Error ? error.message : copy.masks.saveError);
     } finally {
       setIsSaving(false);
     }
@@ -143,7 +145,7 @@ export function MasksPage() {
       }
       setPageError(null);
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : "Failed to delete mask");
+      setPageError(error instanceof Error ? error.message : copy.masks.deleteError);
     }
   }
 
@@ -158,7 +160,9 @@ export function MasksPage() {
       });
       navigate(`/chat/${conversation.id}`);
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : "Failed to create conversation from mask");
+      setPageError(
+        error instanceof Error ? error.message : copy.masks.createConversationError
+      );
     }
   }
 
@@ -168,59 +172,56 @@ export function MasksPage() {
       await refreshMasks(search.trim() || undefined);
       setPageError(null);
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : "Failed to search masks");
+      setPageError(error instanceof Error ? error.message : copy.masks.searchError);
     }
   }
 
   return (
     <div className="panel-grid panel-grid--masks">
       <section className="panel panel--hero">
-        <p className="eyebrow">Masks</p>
-        <h2>Prompt presets</h2>
-        <p className="muted">
-          Phase 10 adds reusable prompt templates. Pick one to start a conversation faster,
-          or create your own private mask with provider defaults.
-        </p>
+        <p className="eyebrow">{copy.masks.badge}</p>
+        <h2>{copy.masks.title}</h2>
+        <p className="muted">{copy.masks.description}</p>
         <form className="search-row" onSubmit={handleSearchSubmit}>
           <input
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search by name or tag"
+            placeholder={copy.masks.searchPlaceholder}
             value={search}
           />
           <button className="button button--ghost" type="submit">
-            Search
+            {copy.common.search}
           </button>
         </form>
       </section>
 
       <section className="panel">
-        <p className="eyebrow">{editingMaskId ? "Edit" : "Create"}</p>
-        <h3>{editingMaskId ? "Update your mask" : "New custom mask"}</h3>
+        <p className="eyebrow">{editingMaskId ? copy.masks.editBadge : copy.masks.createBadge}</p>
+        <h3>{editingMaskId ? copy.masks.editTitle : copy.masks.createTitle}</h3>
         <form className="settings-form" onSubmit={handleSubmit}>
           <label className="settings-field">
-            <span>Name</span>
+            <span>{copy.masks.name}</span>
             <input
               onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
               value={form.name}
             />
           </label>
           <label className="settings-field">
-            <span>Avatar</span>
+            <span>{copy.masks.avatar}</span>
             <input
               onChange={(event) => setForm((current) => ({ ...current, avatar: event.target.value }))}
-              placeholder="Emoji or short label"
+              placeholder={copy.masks.avatarPlaceholder}
               value={form.avatar ?? ""}
             />
           </label>
           <label className="settings-field">
-            <span>Default provider</span>
+            <span>{copy.masks.defaultProvider}</span>
             <select
               onChange={(event) =>
                 setForm((current) => ({ ...current, defaultProvider: event.target.value }))
               }
               value={form.defaultProvider ?? ""}
             >
-              <option value="">No override</option>
+              <option value="">{copy.masks.noOverride}</option>
               {providers.map((provider) => (
                 <option key={provider.name} value={provider.name}>
                   {provider.displayName}
@@ -229,27 +230,27 @@ export function MasksPage() {
             </select>
           </label>
           <label className="settings-field">
-            <span>Default model</span>
+            <span>{copy.masks.defaultModel}</span>
             <input
               onChange={(event) =>
                 setForm((current) => ({ ...current, defaultModel: event.target.value }))
               }
-              placeholder="Optional model id"
+              placeholder={copy.masks.modelPlaceholder}
               value={form.defaultModel ?? ""}
             />
           </label>
           <label className="settings-field">
-            <span>Tags</span>
+            <span>{copy.masks.tags}</span>
             <input
               onChange={(event) =>
                 setForm((current) => ({ ...current, tags: stringToTags(event.target.value) }))
               }
-              placeholder="code, review, quality"
+              placeholder={copy.masks.tagsPlaceholder}
               value={tagsToString(form.tags ?? [])}
             />
           </label>
           <label className="settings-field">
-            <span>System prompt</span>
+            <span>{copy.masks.systemPrompt}</span>
             <textarea
               className="settings-textarea"
               onChange={(event) =>
@@ -267,15 +268,19 @@ export function MasksPage() {
               }
               type="checkbox"
             />
-            <span>Visible to other signed-in users</span>
+            <span>{copy.masks.visibleToOthers}</span>
           </label>
           <div className="button-row">
             <button className="button button--primary" disabled={isSaving} type="submit">
-              {isSaving ? "Saving..." : editingMaskId ? "Update mask" : "Create mask"}
+              {isSaving
+                ? copy.masks.saving
+                : editingMaskId
+                  ? copy.masks.saveUpdating
+                  : copy.masks.saveCreating}
             </button>
             {editingMaskId ? (
               <button className="button button--ghost" onClick={resetForm} type="button">
-                Cancel
+                {copy.common.cancel}
               </button>
             ) : null}
           </div>
@@ -284,9 +289,9 @@ export function MasksPage() {
       </section>
 
       <section className="panel">
-        <p className="eyebrow">Library</p>
-        <h3>Available masks</h3>
-        {isLoading ? <p className="muted">Loading masks...</p> : null}
+        <p className="eyebrow">{copy.masks.badge}</p>
+        <h3>{copy.masks.libraryTitle}</h3>
+        {isLoading ? <p className="muted">{copy.masks.loadingMasks}</p> : null}
         <div className="mask-grid">
           {masks.map((mask) => (
             <article className="mask-card" key={mask.id}>
@@ -294,10 +299,18 @@ export function MasksPage() {
                 <div>
                   <strong>{mask.avatar ? `${mask.avatar} ${mask.name}` : mask.name}</strong>
                   <p className="muted">
-                    {(mask.defaultProvider ?? "default provider") + " / " + (mask.defaultModel ?? "default model")}
+                    {(mask.defaultProvider ?? copy.masks.defaultProviderText) +
+                      " / " +
+                      (mask.defaultModel ?? copy.masks.defaultModelText)}
                   </p>
                 </div>
-                <span className="pill">{mask.ownerId ? (mask.isPublic ? "Public" : "Private") : "Builtin"}</span>
+                <span className="pill">
+                  {mask.ownerId
+                    ? mask.isPublic
+                      ? copy.common.public
+                      : copy.common.private
+                    : copy.masks.builtin}
+                </span>
               </div>
               <p className="mask-card__prompt">{mask.systemPrompt}</p>
               <div className="status-list">
@@ -311,11 +324,11 @@ export function MasksPage() {
                   onClick={() => void handleCreateConversation(mask)}
                   type="button"
                 >
-                  New chat
+                  {copy.masks.newChat}
                 </button>
                 {mask.ownerId ? (
                   <button className="button button--ghost" onClick={() => startEditing(mask)} type="button">
-                    Edit
+                    {copy.common.edit}
                   </button>
                 ) : null}
                 {mask.ownerId ? (
@@ -324,7 +337,7 @@ export function MasksPage() {
                     onClick={() => void handleDelete(mask.id)}
                     type="button"
                   >
-                    Delete
+                    {copy.common.delete}
                   </button>
                 ) : null}
               </div>

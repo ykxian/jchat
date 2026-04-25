@@ -1,6 +1,7 @@
 import { ReactNode, useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { ensureSession } from "../../auth/session";
+import { usePreferences } from "../../preferences/preferences";
 import { useAuthStore } from "../../stores/authStore";
 import { SessionGateFallback } from "./SessionGateFallback";
 
@@ -22,6 +23,7 @@ function getSafeNext(search: string) {
 export function PublicOnlyGuard({ children }: PublicOnlyGuardProps) {
   const location = useLocation();
   const status = useAuthStore((state) => state.status);
+  const { copy } = usePreferences();
 
   useEffect(() => {
     if (status === "unknown") {
@@ -32,8 +34,8 @@ export function PublicOnlyGuard({ children }: PublicOnlyGuardProps) {
   if (status === "unknown" || status === "loading") {
     return (
       <SessionGateFallback
-        title="Checking your session"
-        description="If you still have a valid refresh cookie, the app will take you back in."
+        title={copy.session.checkingTitle}
+        description={copy.session.checkingDescription}
       />
     );
   }

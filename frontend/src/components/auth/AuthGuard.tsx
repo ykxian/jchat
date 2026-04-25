@@ -1,6 +1,7 @@
 import { ReactNode, useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { ensureSession } from "../../auth/session";
+import { usePreferences } from "../../preferences/preferences";
 import { useAuthStore } from "../../stores/authStore";
 import { SessionGateFallback } from "./SessionGateFallback";
 
@@ -16,6 +17,7 @@ function buildNextUrl(pathname: string, search: string, hash: string) {
 export function AuthGuard({ children }: AuthGuardProps) {
   const location = useLocation();
   const status = useAuthStore((state) => state.status);
+  const { copy } = usePreferences();
 
   useEffect(() => {
     if (status === "unknown") {
@@ -26,8 +28,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
   if (status === "unknown" || status === "loading") {
     return (
       <SessionGateFallback
-        title="Restoring your workspace"
-        description="Checking the refresh cookie and loading your account session."
+        title={copy.session.restoringTitle}
+        description={copy.session.restoringDescription}
       />
     );
   }

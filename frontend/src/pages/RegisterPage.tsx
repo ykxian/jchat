@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { authApi } from "../api/auth";
 import { ApiError } from "../api/client";
+import { usePreferences } from "../preferences/preferences";
 
 function getSafeNext(searchParams: URLSearchParams) {
   const next = searchParams.get("next");
@@ -13,16 +14,17 @@ function getSafeNext(searchParams: URLSearchParams) {
   return next;
 }
 
-function getErrorMessage(error: unknown) {
+function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof ApiError) {
     return error.message;
   }
 
-  return "Unable to create your account right now. Please try again.";
+  return fallback;
 }
 
 export function RegisterPage() {
   const navigate = useNavigate();
+  const { copy } = usePreferences();
   const [searchParams] = useSearchParams();
   const nextPath = getSafeNext(searchParams);
   const [displayName, setDisplayName] = useState("");
@@ -47,7 +49,7 @@ export function RegisterPage() {
         { replace: true }
       );
     } catch (error) {
-      setErrorMessage(getErrorMessage(error));
+      setErrorMessage(getErrorMessage(error, copy.auth.unableToRegister));
     } finally {
       setIsSubmitting(false);
     }
@@ -55,12 +57,9 @@ export function RegisterPage() {
 
   return (
     <section className="auth-card">
-      <p className="eyebrow">Auth</p>
-      <h2>Create Account</h2>
-      <p className="muted">
-        Registration writes the user record first. After that, sign in and let
-        the refresh cookie keep the session alive.
-      </p>
+      <p className="eyebrow">{copy.auth.badge}</p>
+      <h2>{copy.auth.registerTitle}</h2>
+      <p className="muted">{copy.auth.registerDescription}</p>
 
       {errorMessage ? (
         <div className="auth-feedback auth-feedback--error">{errorMessage}</div>
@@ -68,32 +67,32 @@ export function RegisterPage() {
 
       <form className="form-grid" onSubmit={handleSubmit}>
         <label className="field">
-          <span>Display Name</span>
+          <span>{copy.auth.displayName}</span>
           <input
             autoComplete="nickname"
             onChange={(event) => setDisplayName(event.target.value)}
-            placeholder="Alice"
+            placeholder={copy.auth.displayNamePlaceholder}
             type="text"
             value={displayName}
           />
         </label>
         <label className="field">
-          <span>Email</span>
+          <span>{copy.auth.email}</span>
           <input
             autoComplete="email"
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="alice@example.com"
+            placeholder={copy.auth.emailPlaceholder}
             required
             type="email"
             value={email}
           />
         </label>
         <label className="field">
-          <span>Password</span>
+          <span>{copy.auth.password}</span>
           <input
             autoComplete="new-password"
             onChange={(event) => setPassword(event.target.value)}
-            placeholder="At least 8 characters with letters and digits"
+            placeholder={copy.auth.passwordPlaceholderRegister}
             required
             type="password"
             value={password}
@@ -102,10 +101,10 @@ export function RegisterPage() {
 
         <div className="button-row">
           <button className="button button--primary" disabled={isSubmitting} type="submit">
-            {isSubmitting ? "Creating..." : "Create Account"}
+            {isSubmitting ? copy.auth.creatingAccount : copy.auth.createAccountCta}
           </button>
           <Link className="button button--ghost" to={`/login?next=${encodeURIComponent(nextPath)}`}>
-            Back To Login
+            {copy.auth.backToLogin}
           </Link>
         </div>
       </form>
