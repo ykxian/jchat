@@ -19,6 +19,7 @@ import { MessageList } from "../components/chat/MessageList";
 import { StreamingMessage } from "../components/chat/StreamingMessage";
 import { Sidebar } from "../components/conversation/Sidebar";
 import { chatCache } from "../db/dexie";
+import { usePreferences } from "../preferences/preferences";
 import { useAuthStore } from "../stores/authStore";
 import { conversationStore, useConversationStore } from "../stores/conversationStore";
 import { streamStore, useStreamStore } from "../stores/streamStore";
@@ -92,10 +93,6 @@ function buildToolResultDraft(toolCallId: string, content: string): Message {
   };
 }
 
-function getConversationHeading(conversation: Conversation | null) {
-  return conversation?.title?.trim() || "New conversation";
-}
-
 function getDefaultSelection(providers: ProviderInfo[]) {
   const available = providers.find((provider) => provider.available) ?? providers[0];
   const model = available?.models[0];
@@ -109,6 +106,7 @@ function getDefaultSelection(providers: ProviderInfo[]) {
 export function ChatPage() {
   const navigate = useNavigate();
   const { conversationId } = useParams();
+  const { copy, locale } = usePreferences();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine
@@ -182,7 +180,7 @@ export function ChatPage() {
         }
       } catch (error) {
         if (!cancelled) {
-          setPageError(error instanceof Error ? error.message : "Failed to load providers");
+          setPageError(error instanceof Error ? error.message : copy.chat.loadProvidersError);
         }
       }
     }
@@ -226,7 +224,7 @@ export function ChatPage() {
         setPageError(null);
       } catch (error) {
         if (!cancelled && !cachedItems.length) {
-          setPageError(error instanceof Error ? error.message : "Failed to load conversations");
+          setPageError(error instanceof Error ? error.message : copy.chat.loadConversationsError);
         }
       } finally {
         if (!cancelled) {
@@ -240,7 +238,7 @@ export function ChatPage() {
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [copy.chat.loadConversationsError, userId]);
 
   useEffect(() => {
     conversationStore.setCurrent(conversationId ?? null);
@@ -297,7 +295,7 @@ export function ChatPage() {
         setPageError(null);
       } catch (error) {
         if (!cancelled && !cachedConversation && !cachedMessages.length) {
-          setPageError(error instanceof Error ? error.message : "Failed to load conversation");
+          setPageError(error instanceof Error ? error.message : copy.chat.loadConversationError);
         }
       } finally {
         if (!cancelled) {
@@ -311,7 +309,7 @@ export function ChatPage() {
     return () => {
       cancelled = true;
     };
-  }, [conversationId, userId]);
+  }, [conversationId, copy.chat.loadConversationError, userId]);
 
   useEffect(() => {
     if (!currentId) {
@@ -430,7 +428,7 @@ export function ChatPage() {
       setPageError(null);
       navigate(`/chat/${conversation.id}`);
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : "Failed to create conversation");
+      setPageError(error instanceof Error ? error.message : copy.chat.createConversationError);
     } finally {
       conversationStore.setCreatingConversation(false);
     }
@@ -464,7 +462,7 @@ export function ChatPage() {
     }
 
     if (!userId) {
-      throw new Error("Session expired. Please sign in again.");
+      throw new Error(copy.chat.sessionExpired);
     }
 
     const conversation = await createConversationFromDraft(userId);
@@ -474,7 +472,7 @@ export function ChatPage() {
 
   async function handleUploadFiles(files: File[]) {
     if (!isOnline) {
-      setPageError("Reconnect before uploading attachments.");
+      setPageError(copy.chat.uploadOfflineError);
       return;
     }
 
@@ -491,7 +489,7 @@ export function ChatPage() {
       }));
       setPageError(null);
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : "Failed to upload attachments");
+      setPageError(error instanceof Error ? error.message : copy.chat.uploadError);
     } finally {
       setIsUploading(false);
     }
@@ -503,12 +501,12 @@ export function ChatPage() {
 
   async function handleSendMessage(content: string) {
     if (!isOnline) {
-      setPageError("Offline mode is read-only. Reconnect to send messages.");
+      setPageError(copy.chat.sendOfflineError);
       return;
     }
 
     if (!userId) {
-      setPageError("Session expired. Please sign in again.");
+      setPageError(copy.chat.sessionExpired);
       return;
     }
 
@@ -553,7 +551,7 @@ export function ChatPage() {
         },
         {
           onError(event) {
-            const errorMessage = event.message ?? "Chat stream failed";
+            const errorMessage = event.message ?? copy.chat.sendError;
             streamStore.fail(errorMessage);
             setPageError(errorMessage);
           },
@@ -609,9 +607,9 @@ export function ChatPage() {
       streamStore.clear();
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
-        setPageError("Streaming stopped.");
+        setPageError(copy.chat.stopped);
       } else {
-        const message = error instanceof Error ? error.message : "Failed to send message";
+        const message = error instanceof Error ? error.message : copy.chat.sendError;
         streamStore.fail(message);
         setPageError(message);
       }
@@ -646,7 +644,7 @@ export function ChatPage() {
 
       setPageError(null);
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : "Failed to update conversation");
+      setPageError(error instanceof Error ? error.message : copy.chat.updateConversationError);
     }
   }
 
@@ -664,20 +662,33 @@ export function ChatPage() {
 
       <section className="chat-main">
         <header className="chat-main__header">
-          <div>
-            <p className="eyebrow">Chat</p>
-            <h2>{getConversationHeading(currentConversation)}</h2>
-            <p className="muted">
-              {currentConversation
-                ? `${currentConversation.provider} / ${currentConversation.model}`
-                : "Create a conversation and start sending messages."}
-            </p>
+          <div className="chat-main__title-row">
+            <div className="chat-main__hero-copy">
+              <h2>{currentConversation?.title?.trim() || copy.chat.emptyTitle}</h2>
+              <p className="muted">
+                {currentConversation
+                  ? `${currentConversation.provider} / ${currentConversation.model}`
+                  : copy.chat.noConversationSelected}
+              </p>
+            </div>
+            {currentConversation ? (
+              <div className="chat-main__summary">
+                <span className="status-chip">
+                  {currentConversation.messageCount} {copy.chat.messages}
+                </span>
+                {currentConversation.reasoningEffort ? (
+                  <span className="status-chip">
+                    {copy.chat.reasoningLabel} {currentConversation.reasoningEffort}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
           </div>
           {currentConversation ? (
             <div className="chat-toolbar">
               <div className="chat-toolbar__controls">
                 <label className="toolbar-field">
-                  <span>Mask</span>
+                  <span>{copy.chat.mask}</span>
                   <select
                     disabled={Boolean(isStreamingCurrent)}
                     onChange={(event) => {
@@ -692,7 +703,7 @@ export function ChatPage() {
                     }}
                     value={currentConversation.maskId ?? ""}
                   >
-                    <option value="">No mask</option>
+                    <option value="">{copy.chat.noMask}</option>
                     {masks.map((mask) => (
                       <option key={mask.id} value={mask.id}>
                         {mask.avatar ? `${mask.avatar} ${mask.name}` : mask.name}
@@ -702,7 +713,7 @@ export function ChatPage() {
                 </label>
 
                 <label className="toolbar-field">
-                  <span>Provider</span>
+                  <span>{copy.chat.provider}</span>
                   <select
                     disabled={Boolean(isStreamingCurrent)}
                     onChange={(event) => {
@@ -730,7 +741,7 @@ export function ChatPage() {
                 </label>
 
                 <label className="toolbar-field">
-                  <span>Model</span>
+                  <span>{copy.chat.model}</span>
                   <input
                     disabled={Boolean(isStreamingCurrent)}
                     list={`provider-models-${currentConversation.id}`}
@@ -747,7 +758,7 @@ export function ChatPage() {
                       });
                     }}
                     onChange={(event) => setModelDraft(event.target.value)}
-                    placeholder="Enter model id"
+                    placeholder={copy.masks.modelPlaceholder}
                     value={modelDraft}
                   />
                   <datalist id={`provider-models-${currentConversation.id}`}>
@@ -760,7 +771,7 @@ export function ChatPage() {
                 </label>
 
                 <label className="toolbar-field">
-                  <span>Reasoning</span>
+                  <span>{copy.chat.reasoning}</span>
                   <select
                     disabled={Boolean(isStreamingCurrent)}
                     onChange={(event) => {
@@ -783,13 +794,13 @@ export function ChatPage() {
                 </label>
 
                 <label className="toolbar-field">
-                  <span>Credential</span>
+                  <span>{copy.chat.credential}</span>
                   <select
                     disabled={Boolean(isStreamingCurrent)}
                     onChange={(event) => setSelectedApiKeyId(event.target.value)}
                     value={selectedApiKeyId}
                   >
-                    <option value="">Server key</option>
+                    <option value="">{copy.common.serverKey}</option>
                     {(currentProviderInfo?.userKeys ?? []).map((apiKey) => (
                       <option key={apiKey.id} value={apiKey.id}>
                         {apiKey.label}
@@ -798,17 +809,18 @@ export function ChatPage() {
                   </select>
                 </label>
               </div>
-              <div className="status-list">
-                <span>{currentConversation.messageCount} messages</span>
-                {currentMask ? <span>Mask {currentMask.name}</span> : null}
+              <div className="chat-toolbar__meta">
+                <span className={isStreamingCurrent ? "pill" : "status-chip status-chip--muted"}>
+                  {isStreamingCurrent ? copy.chat.streaming : copy.common.available}
+                </span>
+                {currentMask ? <span>{copy.chat.mask} {currentMask.name}</span> : null}
                 {currentConversation.lastMessageAt ? (
-                  <span>Updated {new Date(currentConversation.lastMessageAt).toLocaleString()}</span>
-                ) : null}
-                {currentConversation.reasoningEffort ? (
-                  <span>Reasoning {currentConversation.reasoningEffort}</span>
+                  <span>
+                    {copy.chat.updatedAt}{" "}
+                    {new Date(currentConversation.lastMessageAt).toLocaleString(locale)}
+                  </span>
                 ) : null}
                 {selectedApiKey?.baseUrl ? <span>Endpoint {selectedApiKey.baseUrl}</span> : null}
-                {selectedApiKey?.baseUrl ? <span>Model is freeform for custom endpoints</span> : null}
               </div>
             </div>
           ) : null}
@@ -816,8 +828,7 @@ export function ChatPage() {
 
         {!isOnline ? (
           <div className="status-banner status-banner--warning">
-            You're offline. Cached conversations stay readable, but new writes are disabled until
-            the network returns.
+            {copy.chat.offlineBanner}
           </div>
         ) : null}
 

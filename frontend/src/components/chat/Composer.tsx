@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import type { FileRecord } from "../../api/types";
+import { usePreferences } from "../../preferences/preferences";
 
 interface ComposerProps {
   attachments?: FileRecord[];
@@ -26,9 +27,11 @@ export function Composer({
   onSubmit,
   onUploadFiles
 }: ComposerProps) {
+  const { copy } = usePreferences();
   const [value, setValue] = useState("");
   const isInputDisabled = disabled || isOffline;
   const isSendDisabled = isInputDisabled || isStreaming || !value.trim() || isWaitingForAttachments;
+  const canUpload = !isInputDisabled && !isStreaming && !isUploading;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,34 +47,17 @@ export function Composer({
 
   return (
     <form className="composer" onSubmit={handleSubmit}>
-      <label className="composer__field">
-        <span>Message</span>
+      <label className="composer__field composer__field--message">
         <textarea
           disabled={isInputDisabled}
           onChange={(event) => setValue(event.target.value)}
           placeholder={
             isOffline
-              ? "Offline mode is read-only. Reconnect to send a message."
-              : "Ask something..."
+              ? copy.chat.messagePlaceholderOffline
+              : copy.chat.messagePlaceholder
           }
-          rows={4}
+          rows={5}
           value={value}
-        />
-      </label>
-
-      <label className="composer__field">
-        <span>Attachments</span>
-        <input
-          disabled={isInputDisabled || isStreaming || isUploading}
-          multiple
-          onChange={(event) => {
-            const files = Array.from(event.target.files ?? []);
-            if (files.length) {
-              onUploadFiles?.(files);
-            }
-            event.target.value = "";
-          }}
-          type="file"
         />
       </label>
 
@@ -81,7 +67,9 @@ export function Composer({
             <div className="composer__attachment" key={attachment.id}>
               <div>
                 <strong>{attachment.filename}</strong>
-                <span>{attachment.status === "ready" ? "Ready" : attachment.status}</span>
+                <span>
+                  {attachment.status === "ready" ? copy.chat.attachmentsReady : attachment.status}
+                </span>
               </div>
               <button
                 className="button button--ghost"
@@ -89,37 +77,69 @@ export function Composer({
                 onClick={() => onRemoveAttachment?.(attachment.id)}
                 type="button"
               >
-                Remove
+                {copy.common.remove}
               </button>
             </div>
           ))}
         </div>
       ) : null}
 
-      {isOffline ? (
-        <p className="composer__hint">Offline mode keeps cached history readable but disables writes.</p>
-      ) : null}
-      {isUploading ? <p className="composer__hint">Uploading attachments...</p> : null}
-      {isWaitingForAttachments ? (
-        <p className="composer__hint">Wait for attachments to finish processing before sending.</p>
-      ) : null}
+      <div className="composer__toolbar">
+        <label
+          className={
+            canUpload
+              ? "button button--ghost composer__upload"
+              : "button button--ghost composer__upload is-disabled"
+          }
+        >
+          <input
+            disabled={!canUpload}
+            multiple
+            onChange={(event) => {
+              const files = Array.from(event.target.files ?? []);
+              if (files.length) {
+                onUploadFiles?.(files);
+              }
+              event.target.value = "";
+            }}
+            type="file"
+          />
+          <span>{copy.chat.attachments}</span>
+        </label>
+        <div className="composer__status">
+          {attachments.length ? (
+            <span className="status-chip status-chip--muted">
+              {attachments.length} {copy.chat.attachments}
+            </span>
+          ) : null}
+          {isStreaming ? <span className="pill">{copy.chat.streaming}</span> : null}
+        </div>
+        <div className="button-row">
+          <button className="button button--primary" disabled={isSendDisabled} type="submit">
+            {isStreaming ? copy.chat.streaming : copy.chat.send}
+          </button>
+          <button
+            className="button button--ghost"
+            disabled={!isStreaming}
+            onClick={onAbort}
+            type="button"
+          >
+            {copy.chat.stop}
+          </button>
+        </div>
+      </div>
 
-      <div className="button-row">
-        <button
-          className="button button--primary"
-          disabled={isSendDisabled}
-          type="submit"
-        >
-          {isStreaming ? "Streaming..." : "Send"}
-        </button>
-        <button
-          className="button button--ghost"
-          disabled={!isStreaming}
-          onClick={onAbort}
-          type="button"
-        >
-          Stop
-        </button>
+      <div className="composer__footer">
+        {isOffline ? (
+          <p className="composer__hint">{copy.chat.attachmentsOfflineHint}</p>
+        ) : null}
+        {isUploading ? <p className="composer__hint">{copy.chat.attachmentsUploading}</p> : null}
+        {isWaitingForAttachments ? (
+          <p className="composer__hint">{copy.chat.attachmentsWaiting}</p>
+        ) : null}
+        {!isOffline && !isUploading && !isWaitingForAttachments ? (
+          <p className="composer__hint">{copy.chat.endpointHint}</p>
+        ) : null}
       </div>
     </form>
   );

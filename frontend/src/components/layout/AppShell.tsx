@@ -1,18 +1,20 @@
 import { useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { authApi } from "../../api/auth";
+import { usePreferences } from "../../preferences/preferences";
 import { useAuthStore } from "../../stores/authStore";
-
-const navigation = [
-  { to: "/chat", label: "Chat" },
-  { to: "/masks", label: "Masks" },
-  { to: "/settings", label: "Settings" }
-];
 
 export function AppShell() {
   const navigate = useNavigate();
-  const user = useAuthStore((state) => state.user);
+  const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { copy, resolvedTheme } = usePreferences();
+  const navigation = [
+    { to: "/chat", label: copy.shell.navChat },
+    { to: "/masks", label: copy.shell.navMasks },
+    { to: "/settings", label: copy.shell.navSettings }
+  ];
+  const currentNav = navigation.find((item) => location.pathname.startsWith(item.to));
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -29,12 +31,10 @@ export function AppShell() {
     <div className="shell">
       <aside className="shell-sidebar">
         <div className="shell-sidebar__header">
-          <p className="eyebrow">jchat</p>
-          <h1>Workspace</h1>
-          <p className="muted">
-            Auth, conversation history, and streaming chat now share the same
-            protected shell.
-          </p>
+          <div className="shell-brand">
+            <span className="brand-mark brand-mark--compact">{copy.appName}</span>
+          </div>
+          <p className="shell-sidebar__label">{copy.shell.workspace}</p>
         </div>
 
         <nav aria-label="Primary" className="shell-nav">
@@ -50,41 +50,22 @@ export function AppShell() {
             </NavLink>
           ))}
         </nav>
-
-        <section className="shell-note">
-          <p className="eyebrow">Signed In As</p>
-          <div className="shell-account">
-            <strong>{user?.displayName ?? "Unknown User"}</strong>
-            <span>{user?.email ?? "No email loaded"}</span>
-          </div>
-        </section>
-
-        <section className="shell-note">
-          <p className="eyebrow">Ready For</p>
-          <ul className="feature-list">
-            <li>Conversation list and message reload after refresh</li>
-            <li>Streaming chat linked to authenticated requests</li>
-            <li>Provider switching and encrypted BYOK settings</li>
-            <li>Mask presets for prompt and model defaults</li>
-          </ul>
-        </section>
       </aside>
 
       <div className="shell-main">
         <header className="shell-header">
-          <div>
-            <p className="eyebrow">Workspace</p>
-            <h2>React SPA</h2>
+          <div className="shell-header__copy">
+            <h2>{currentNav?.label ?? copy.shell.headline}</h2>
           </div>
-          <div className="button-row">
-            <span className="pill">Auth + conversations + providers + masks + SSE</span>
+          <div className="shell-header__actions">
+            <span className="status-chip">{resolvedTheme}</span>
             <button
               className="button button--ghost"
               disabled={isLoggingOut}
               onClick={handleLogout}
               type="button"
             >
-              {isLoggingOut ? "Signing Out..." : "Sign Out"}
+              {isLoggingOut ? copy.shell.signingOut : copy.shell.signOut}
             </button>
           </div>
         </header>
