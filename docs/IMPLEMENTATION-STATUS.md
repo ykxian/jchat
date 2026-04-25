@@ -7,8 +7,9 @@
 ## Current Stage
 
 - 当前目标：`Phase 12`
-- 当前状态：`Phase 12 已完成`
-- 最后更新：`2026-04-24`
+- 当前状态：`实现主链已覆盖到 Phase 12，但仍有验收缺口与残留限制`
+- 最后更新：`2026-04-25`
+- 验收与剩余问题请同时查看 [docs/PHASE1-12-ACCEPTANCE-ISSUES.md](/home/ykx/jchat/docs/PHASE1-12-ACCEPTANCE-ISSUES.md)
 
 ---
 
@@ -952,7 +953,7 @@ curl -N http://localhost:8080/api/v1/chat/completions \
 
 ---
 
-## Phase 12 已完成文件上传与轻量 RAG
+## Phase 12 主链已落地，但仍有验收缺口
 
 ### 本轮新增 / 更新
 

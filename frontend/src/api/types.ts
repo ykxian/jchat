@@ -71,6 +71,7 @@ export interface ChatCompletionPayload {
   maxTokens?: number | null;
   maskId?: string | null;
   fileIds?: string[];
+  tools?: string[];
   reasoningEffort?: "low" | "medium" | "high" | null;
   apiKeyId?: string | null;
 }

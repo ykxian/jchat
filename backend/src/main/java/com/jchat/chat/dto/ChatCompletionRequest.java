@@ -21,6 +21,7 @@ public record ChatCompletionRequest(
         @Size(max = 50, message = "maskId must be at most 50 characters")
         String maskId,
         List<@Size(max = 50, message = "fileIds entries must be at most 50 characters") String> fileIds,
+        List<@Size(max = 50, message = "tools entries must be at most 50 characters") String> tools,
         @Size(max = 20, message = "reasoningEffort must be at most 20 characters")
         String reasoningEffort,
         @Size(max = 50, message = "apiKeyId must be at most 50 characters")

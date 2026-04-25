@@ -35,6 +35,7 @@ import reactor.core.publisher.Flux;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -115,7 +116,7 @@ class ChatServiceTest {
         when(messageService.listEntities(42L)).thenReturn(List.of(userMessage));
         when(promptBuilder.build(conversation, null, List.of(userMessage), List.of()))
                 .thenReturn(List.of(ChatMessage.user("hello")));
-        when(toolRegistry.listEnabledToolSpecs()).thenReturn(List.of(new ChatRequest.ToolSpec(
+        when(toolRegistry.listEnabledToolSpecs(List.of())).thenReturn(List.of(new ChatRequest.ToolSpec(
                 "calculator",
                 "Evaluate a math expression. Supports +, -, *, /, ^, sqrt, sin, cos, etc.",
                 com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode()
@@ -149,6 +150,7 @@ class ChatServiceTest {
                 1.0,
                 256,
                 null,
+                List.of(),
                 List.of(),
                 "high",
                 null
@@ -197,7 +199,7 @@ class ChatServiceTest {
         when(messageService.listEntities(42L)).thenReturn(List.of(userMessage));
         when(promptBuilder.build(conversation, null, List.of(userMessage), List.of()))
                 .thenReturn(List.of(ChatMessage.user("hello")));
-        when(toolRegistry.listEnabledToolSpecs()).thenReturn(List.of(new ChatRequest.ToolSpec(
+        when(toolRegistry.listEnabledToolSpecs(List.of())).thenReturn(List.of(new ChatRequest.ToolSpec(
                 "calculator",
                 "Evaluate a math expression. Supports +, -, *, /, ^, sqrt, sin, cos, etc.",
                 com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode()
@@ -217,12 +219,64 @@ class ChatServiceTest {
                 null,
                 null,
                 List.of(),
+                List.of(),
                 null,
                 null
         ));
 
         verify(sseEventWriter).sendError(any(SseEmitter.class), eq(SseMessage.error("LLM_UPSTREAM_ERROR", "upstream failed")));
         verify(messageService, never()).createAssistantMessage(any(), any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void completePassesRequestedToolSubsetToProvider() throws Exception {
+        Conversation conversation = conversation();
+        Message userMessage = message(1001L, MessageRole.user, "hello");
+        ChatRequest.ToolSpec requestedTool = new ChatRequest.ToolSpec(
+                "calculator",
+                "Evaluate a math expression.",
+                com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode()
+        );
+
+        when(conversationService.requireConversation(7L, 42L)).thenReturn(conversation);
+        when(conversationService.updateModelSelection(conversation, "openai", "gpt-4o-mini")).thenReturn(conversation);
+        when(llmProviderRegistry.get("openai")).thenReturn(llmProvider);
+        when(messageService.createUserMessage(
+                conversation,
+                "hello",
+                "openai",
+                "gpt-4o-mini",
+                7L,
+                List.of()
+        )).thenReturn(userMessage);
+        when(messageService.listEntities(42L)).thenReturn(List.of(userMessage));
+        when(promptBuilder.build(conversation, null, List.of(userMessage), List.of()))
+                .thenReturn(List.of(ChatMessage.user("hello")));
+        when(toolRegistry.listEnabledToolSpecs(anyList())).thenReturn(List.of(requestedTool));
+        when(apiKeyService.resolveForChat(7L, "openai", null))
+                .thenReturn(new ApiKeyService.ResolvedApiKey(null, null));
+        when(llmProvider.stream(any(ChatRequest.class), any(ProviderContext.class))).thenReturn(Flux.just(
+                new ChatChunk.Done(FinishReason.STOP)
+        ));
+
+        chatService.complete(7L, new ChatCompletionRequest(
+                "42",
+                "openai",
+                "gpt-4o-mini",
+                List.of(new ChatCompletionMessage("user", "hello")),
+                null,
+                null,
+                null,
+                null,
+                List.of(),
+                List.of("calculator"),
+                null,
+                null
+        ));
+
+        verify(toolRegistry).listEnabledToolSpecs(eq(List.of("calculator")));
+        verify(llmProvider).stream(chatRequestCaptor.capture(), any(ProviderContext.class));
+        assertEquals(List.of(requestedTool), chatRequestCaptor.getValue().tools());
     }
 
     private Conversation conversation() {

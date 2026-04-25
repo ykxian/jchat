@@ -389,6 +389,34 @@ export function ChatPage() {
     return masks.find((mask) => mask.id === maskId) ?? null;
   }
 
+  function getConversationRequestConfig(conversation: Conversation | null) {
+    return {
+      maskId: conversation?.maskId ?? null,
+      model: conversation?.model ?? DEFAULT_MODEL,
+      provider: conversation?.provider ?? DEFAULT_PROVIDER,
+      reasoningEffort: conversation?.reasoningEffort ?? null
+    };
+  }
+
+  function getDraftConversationPayload() {
+    const defaults = getDefaultSelection(providers);
+    const selectedMask = getMask(selectedMaskId || null);
+
+    return {
+      maskId: selectedMask?.id ?? null,
+      model: selectedMask?.defaultModel ?? defaults.model,
+      provider: selectedMask?.defaultProvider ?? defaults.provider,
+      title: null
+    } as const;
+  }
+
+  async function createConversationFromDraft(activeUserId: string) {
+    const conversation = await conversationsApi.create(getDraftConversationPayload());
+    conversationStore.upsertConversation(conversation);
+    await chatCache.upsertConversation(activeUserId, conversation);
+    return conversation;
+  }
+
   async function handleCreateConversation() {
     if (isCreatingConversation || !isOnline || !userId) {
       return;
@@ -398,16 +426,7 @@ export function ChatPage() {
     conversationStore.setCreatingConversation(true);
 
     try {
-      const defaults = getDefaultSelection(providers);
-      const selectedMask = getMask(selectedMaskId || null);
-      const conversation = await conversationsApi.create({
-        maskId: selectedMask?.id ?? null,
-        model: selectedMask?.defaultModel ?? defaults.model,
-        provider: selectedMask?.defaultProvider ?? defaults.provider,
-        title: null
-      });
-      conversationStore.upsertConversation(conversation);
-      await chatCache.upsertConversation(activeUserId, conversation);
+      const conversation = await createConversationFromDraft(activeUserId);
       setPageError(null);
       navigate(`/chat/${conversation.id}`);
     } catch (error) {
@@ -448,16 +467,7 @@ export function ChatPage() {
       throw new Error("Session expired. Please sign in again.");
     }
 
-    const defaults = getDefaultSelection(providers);
-    const selectedMask = getMask(selectedMaskId || null);
-    const conversation = await conversationsApi.create({
-      maskId: selectedMask?.id ?? null,
-      model: selectedMask?.defaultModel ?? defaults.model,
-      provider: selectedMask?.defaultProvider ?? defaults.provider,
-      title: null
-    });
-    conversationStore.upsertConversation(conversation);
-    await chatCache.upsertConversation(userId, conversation);
+    const conversation = await createConversationFromDraft(userId);
     navigate(`/chat/${conversation.id}`);
     return conversation.id;
   }
@@ -505,19 +515,16 @@ export function ChatPage() {
     try {
       const activeUserId = userId;
       let targetConversationId = currentId;
+      let targetConversation = targetConversationId
+        ? conversationStore
+            .getState()
+            .items.find((conversation) => conversation.id === targetConversationId) ?? currentConversation
+        : null;
 
       if (!targetConversationId) {
-        const defaults = getDefaultSelection(providers);
-        const selectedMask = getMask(selectedMaskId || null);
-        const conversation = await conversationsApi.create({
-          maskId: selectedMask?.id ?? null,
-          model: selectedMask?.defaultModel ?? defaults.model,
-          provider: selectedMask?.defaultProvider ?? defaults.provider,
-          title: null
-        });
-        conversationStore.upsertConversation(conversation);
-        await chatCache.upsertConversation(activeUserId, conversation);
+        const conversation = await createConversationFromDraft(activeUserId);
         targetConversationId = conversation.id;
+        targetConversation = conversation;
         navigate(`/chat/${conversation.id}`);
       }
 
@@ -539,11 +546,8 @@ export function ChatPage() {
           conversationId: targetConversationId,
           apiKeyId: selectedApiKeyId || null,
           messages: [{ content, role: "user" }],
-          maskId: currentConversation?.maskId ?? null,
-          model: currentConversation?.model ?? DEFAULT_MODEL,
-          provider: currentConversation?.provider ?? DEFAULT_PROVIDER,
+          ...getConversationRequestConfig(targetConversation),
           fileIds: selectedFileIds,
-          reasoningEffort: currentConversation?.reasoningEffort ?? null,
           temperature: 0.7,
           topP: 1
         },

@@ -383,7 +383,9 @@ public class ChatService {
             String providerName,
             List<Long> fileIds
     ) {
-        List<ChatRequest.ToolSpec> tools = "openai".equals(providerName) ? toolRegistry.listEnabledToolSpecs() : null;
+        List<ChatRequest.ToolSpec> tools = "openai".equals(providerName)
+                ? toolRegistry.listEnabledToolSpecs(request.tools())
+                : null;
         if (tools != null && tools.isEmpty()) {
             tools = null;
         }

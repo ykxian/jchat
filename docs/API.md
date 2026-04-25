@@ -1,227 +1,258 @@
 # API
 
-> REST 端点 + SSE 事件协议完整定义。
+> 当前仓库已经实现并可从代码中核对到的 REST / SSE 契约。
 >
-> Context：前后端契约。前端 `api/*.ts`、后端 Controller 都以本文为准。改动接口必须先改本文，再改代码。
-
----
+> 如需新增端点，先改本文，再改 controller / dto / 前端调用层。
 
 ## 0. 通用约定
 
-- **Base path**：`/api/v1`（所有业务端点前缀）
-- **内容类型**：请求 `application/json`，响应 `application/json`（流式端点 `text/event-stream`）
-- **字符编码**：UTF-8
-- **日期时间**：ISO 8601 UTC（`2026-04-21T10:20:30Z`）
-- **ID**：**字符串化的 bigint**（`"123"`，防 JS number 精度问题）
-- **鉴权**：`Authorization: Bearer <jwt>`，除 `/auth/**` 和 `/health` 外强制
-- **Refresh token**：`__Host-refresh` HttpOnly Secure SameSite=Strict Cookie
-- **分页**：cursor-based，参数 `cursor`、`limit`（默认 20，最大 100），响应 `{ items, next_cursor }`
-- **错误响应**：HTTP 4xx/5xx + `{code, message, details?, requestId}`
+- Base path：`/api/v1`
+- JSON 端点默认 `application/json`
+- 流式聊天端点返回 `text/event-stream`
+- 鉴权：除 `health`、`auth/register`、`auth/login`、`auth/refresh`、`auth/logout`、Swagger/OpenAPI 外均要求 `Authorization: Bearer <jwt>`
+- ID：响应里统一为字符串
+- 时间：ISO-8601 字符串
+- 分页响应：`{ items, nextCursor }`
+- 错误响应：`{ code, message, details?, requestId }`
 
-### 错误码表
+### 错误码
 
-| code | HTTP | 说明 |
-|---|---|---|
-| `AUTH_INVALID` | 401 | token 解析失败或签名不对 |
-| `AUTH_EXPIRED` | 401 | access token 过期（前端据此触发刷新） |
-| `AUTH_REFRESH_INVALID` | 401 | refresh cookie 无效或被吊销 |
-| `VALIDATION_FAILED` | 400 | 请求体字段校验失败 |
-| `NOT_FOUND` | 404 | 资源不存在或不属于当前用户 |
-| `FORBIDDEN` | 403 | 已认证但无权操作该资源 |
-| `CONFLICT` | 409 | 唯一约束冲突（如邮箱已注册） |
-| `RATE_LIMITED` | 429 | 限流或配额用尽 |
-| `LLM_UPSTREAM_ERROR` | 502 | LLM 上游错误（详情含原始消息） |
-| `LLM_UPSTREAM_TIMEOUT` | 504 | LLM 上游超时 |
-| `INTERNAL_ERROR` | 500 | 未预期异常 |
+| code | HTTP |
+|---|---|
+| `AUTH_INVALID` | 401 |
+| `AUTH_EXPIRED` | 401 |
+| `AUTH_REFRESH_INVALID` | 401 |
+| `VALIDATION_FAILED` | 400 |
+| `NOT_FOUND` | 404 |
+| `FORBIDDEN` | 403 |
+| `CONFLICT` | 409 |
+| `RATE_LIMITED` | 429 |
+| `LLM_UPSTREAM_ERROR` | 502 |
+| `LLM_UPSTREAM_TIMEOUT` | 504 |
+| `INTERNAL_ERROR` | 500 |
 
----
+## 1. Health
 
-## 1. Auth
+### GET /health
+
+健康检查。
+
+**Response 200**
+
+```json
+{ "status": "UP" }
+```
+
+## 2. Auth
 
 ### POST /auth/register
-注册新账号。
 
 **Request**
+
 ```json
-{ "email": "alice@example.com", "password": "P@ssw0rd!", "displayName": "Alice" }
+{
+  "email": "alice@example.com",
+  "password": "P@ssw0rd!",
+  "displayName": "Alice"
+}
 ```
 
 **Response 201**
+
 ```json
-{ "id": "1", "email": "alice@example.com", "displayName": "Alice", "createdAt": "2026-04-21T10:20:30Z" }
+{
+  "id": "1",
+  "email": "alice@example.com",
+  "displayName": "Alice",
+  "avatarUrl": null,
+  "emailVerified": false,
+  "createdAt": "2026-04-25T10:20:30Z"
+}
 ```
-
-**Errors**：`VALIDATION_FAILED`（密码 <8 位或不含字母+数字；邮箱格式错）、`CONFLICT`（邮箱已注册）、`RATE_LIMITED`。
-
----
 
 ### POST /auth/login
-登录换 token。
 
 **Request**
+
 ```json
-{ "email": "alice@example.com", "password": "P@ssw0rd!" }
+{
+  "email": "alice@example.com",
+  "password": "P@ssw0rd!"
+}
 ```
 
 **Response 200**
+
 ```json
-{ "accessToken": "eyJhbGci...", "tokenType": "Bearer", "expiresIn": 900, "user": { "id": "1", "email": "...", "displayName": "..." } }
+{
+  "accessToken": "eyJhbGciOi...",
+  "tokenType": "Bearer",
+  "expiresIn": 900,
+  "user": {
+    "id": "1",
+    "email": "alice@example.com",
+    "displayName": "Alice",
+    "avatarUrl": null,
+    "emailVerified": false,
+    "createdAt": "2026-04-25T10:20:30Z"
+  }
+}
 ```
-**Set-Cookie**：`__Host-refresh=<32b-b64>; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=604800`
 
-**Errors**：`AUTH_INVALID`（账号或密码错）、`RATE_LIMITED`。
-
----
+同时设置 refresh cookie。
 
 ### POST /auth/refresh
-刷新 access token（读 refresh cookie）。
 
-**Request**：无 body；cookie 自动带。
+读取 refresh cookie，返回新的 access token，并轮换 refresh cookie。
 
-**Response 200**：同 login（accessToken + 新 refresh cookie）。
-
-**Errors**：`AUTH_REFRESH_INVALID`、`RATE_LIMITED`。
-
----
+**Response 200**：结构同 `POST /auth/login`
 
 ### POST /auth/logout
+
 吊销当前 refresh token。
 
-**Response 204**；Clear cookie。
-
----
+**Response 204**
 
 ### GET /auth/me
-获取当前用户。
 
 **Response 200**
+
 ```json
-{ "id": "1", "email": "...", "displayName": "Alice", "avatarUrl": null, "emailVerified": false, "createdAt": "..." }
+{
+  "id": "1",
+  "email": "alice@example.com",
+  "displayName": "Alice",
+  "avatarUrl": null,
+  "emailVerified": false,
+  "createdAt": "2026-04-25T10:20:30Z"
+}
 ```
 
----
+当前未实现：
 
-### PATCH /auth/me
-更新昵称 / 头像。
+- `PATCH /auth/me`
+- `POST /auth/change-password`
 
-**Request**：`{ displayName?, avatarUrl? }`
-
-**Response 200**：新的 user 对象。
-
----
-
-### POST /auth/change-password
-
-**Request**：`{ currentPassword, newPassword }`
-
-**Response 204**；会吊销所有 refresh token（要求重新登录其他设备）。
-
----
-
-## 2. Conversations
+## 3. Conversations
 
 ### GET /conversations
-列表。
 
-**Query**：`cursor?`、`limit?`（默认 20）、`archived?`（bool，默认 false）、`pinned?`。
+**Query**
+
+- `cursor?`
+- `limit?`，默认 `20`，最大 `100`
+- `archived?`，默认 `false`
+- `pinned?`
 
 **Response 200**
+
 ```json
 {
   "items": [
     {
-      "id": "42", "title": "React hooks 讨论", "provider": "openai", "model": "gpt-4o-mini",
-      "maskId": null, "pinned": true, "archived": false,
-      "lastMessageAt": "2026-04-21T10:20:30Z", "messageCount": 14,
-      "createdAt": "...", "updatedAt": "..."
-    }
-  ],
-  "nextCursor": "eyJ..."
-}
-```
-
----
-
-### POST /conversations
-新建。
-
-**Request**
-```json
-{
-  "title": null,
-  "provider": "openai",
-  "model": "gpt-4o-mini",
-  "systemPrompt": null,
-  "reasoningEffort": null,
-  "maskId": null
-}
-```
-`title` 空时首次发消息后自动生成（取 user message 前 30 字）。
-
-**Response 201**：conversation 对象。
-
----
-
-### GET /conversations/{id}
-详情（不含消息）。
-
-**Response 200**：conversation 对象 + 所有字段。
-
----
-
-### PATCH /conversations/{id}
-更新。可改字段：`title`、`pinned`、`archived`、`systemPrompt`、`provider`、`model`、`reasoningEffort`、`maskId`。
-
-**Response 200**：新的 conversation 对象。
-
----
-
-### DELETE /conversations/{id}
-软删（`deleted_at = now()`）。
-
-**Response 204**。
-
----
-
-### GET /conversations/{id}/messages
-消息列表。
-
-**Query**：`cursor?`、`limit?`（默认 50，max 200）。
-
-**Response 200**
-```json
-{
-  "items": [
-    {
-      "id": "1001", "role": "user", "content": "你好",
-      "toolCalls": null, "toolCallId": null, "parentId": null,
-      "promptTokens": null, "completionTokens": null,
-      "fileIds": [], "createdAt": "..."
-    },
-    {
-      "id": "1002", "role": "assistant", "content": "你好！...",
-      "toolCalls": [...], "toolCallId": null, "parentId": "1001",
-      "promptTokens": 12, "completionTokens": 28,
-      "fileIds": [], "createdAt": "..."
+      "id": "42",
+      "title": "React hooks 讨论",
+      "provider": "openai",
+      "model": "gpt-4o-mini",
+      "systemPrompt": null,
+      "maskId": null,
+      "reasoningEffort": null,
+      "pinned": false,
+      "archived": false,
+      "lastMessageAt": "2026-04-25T10:20:30Z",
+      "messageCount": 14,
+      "createdAt": "2026-04-25T10:20:30Z",
+      "updatedAt": "2026-04-25T10:20:30Z"
     }
   ],
   "nextCursor": null
 }
 ```
 
----
-
-### POST /conversations/{id}/messages/{messageId}/regenerate
-重新生成某条 assistant 消息之后的回复。返回 SSE（同 `/chat/completions`）。
-
----
-
-## 3. Chat（主力流式端点）
-
-### POST /chat/completions
-**Content-Type**: `application/json` · **Accept**: `text/event-stream`
+### POST /conversations
 
 **Request**
+
+```json
+{
+  "title": null,
+  "provider": "openai",
+  "model": "gpt-4o-mini",
+  "systemPrompt": null,
+  "maskId": null,
+  "reasoningEffort": null
+}
+```
+
+**Response 201**：返回单个 conversation 对象
+
+### GET /conversations/{id}
+
+**Response 200**：返回单个 conversation 对象
+
+### PATCH /conversations/{id}
+
+可更新字段：
+
+- `title`
+- `pinned`
+- `archived`
+- `systemPrompt`
+- `maskId`
+- `provider`
+- `model`
+- `reasoningEffort`
+
+**Response 200**：返回更新后的 conversation 对象
+
+### DELETE /conversations/{id}
+
+软删除。
+
+**Response 204**
+
+### GET /conversations/{id}/messages
+
+**Query**
+
+- `cursor?`
+- `limit?`，默认 `50`，最大 `200`
+
+**Response 200**
+
+```json
+{
+  "items": [
+    {
+      "id": "1001",
+      "role": "USER",
+      "content": "你好",
+      "toolCalls": null,
+      "toolCallId": null,
+      "parentId": null,
+      "promptTokens": null,
+      "completionTokens": null,
+      "fileIds": [],
+      "createdAt": "2026-04-25T10:20:30Z"
+    }
+  ],
+  "nextCursor": null
+}
+```
+
+当前未实现：
+
+- `POST /conversations/{id}/messages/{messageId}/regenerate`
+
+## 4. Chat
+
+### POST /chat/completions
+
+`Content-Type: application/json`  
+`Accept: text/event-stream`
+
+**Request**
+
 ```json
 {
   "conversationId": "42",
@@ -230,120 +261,207 @@
   "messages": [
     { "role": "user", "content": "解释一下 virtual thread" }
   ],
-  "maskId": null,
-  "fileIds": [],
   "temperature": 0.7,
   "topP": 1.0,
   "maxTokens": null,
-  "reasoningEffort": "medium",
-  "stream": true,
+  "maskId": null,
+  "fileIds": [],
   "tools": ["calculator"],
+  "reasoningEffort": "medium",
   "apiKeyId": null
 }
 ```
 
-**说明**
-- `messages` 只传**本次要发送的新消息**（通常一条 user）；历史由后端按 `conversationId` 自拼。前端若传全量后端以 DB 为准。
-- `apiKeyId` 为空 = 用服务端 key；指定 = 用用户的加密 key。
-- `reasoningEffort` 当前支持 `low | medium | high`；未传时回退到 conversation 设置。
-- `tools` 空数组 = 不启用工具。
-- `stream: false` 不支持（所有响应必为 SSE）。
+说明：
 
-**Response 200**：`text/event-stream`
-
----
-
-### SSE 事件协议
-
-每条事件：
-
-```
-event: message
-data: <single-line-json>
-
-```
-
-（两个换行分隔；兼容 `event: error` 用于错误，仅错误事件会打断后续）
-
-**事件类型**
-
-```ts
-type Event =
-  | { type: "start",       messageId: string, requestId: string }
-  | { type: "delta",       content: string }
-  | { type: "tool_call",   id: string, name: string, arguments: object }
-  | { type: "tool_result", id: string, result: string | object, error?: string }
-  | { type: "usage",       prompt: number, completion: number }
-  | { type: "done",        finishReason: "stop" | "length" | "tool_calls" | "content_filter" }
-  | { type: "error",       code: string, message: string }
-```
-
-**典型流**
-```
-event: message
-data: {"type":"start","messageId":"1003","requestId":"r-abc123"}
-
-event: message
-data: {"type":"delta","content":"虚"}
-
-event: message
-data: {"type":"delta","content":"拟线程"}
-
-event: message
-data: {"type":"delta","content":"是 Java 21 引入的..."}
-
-event: message
-data: {"type":"usage","prompt":45,"completion":120}
-
-event: message
-data: {"type":"done","finishReason":"stop"}
-```
-
-**带工具调用**
-```
-... start ...
-event: message
-data: {"type":"tool_call","id":"call_1","name":"calculator","arguments":{"expression":"(25^3-17)*3"}}
-
-event: message
-data: {"type":"tool_result","id":"call_1","result":"46824"}
-
-event: message
-data: {"type":"delta","content":"结果是 46824。"}
-
-... done ...
-```
-
-**错误**
-```
-event: error
-data: {"type":"error","code":"LLM_UPSTREAM_ERROR","message":"429 rate limit from openai"}
-```
-
-### 取消
-前端 `AbortController.abort()` → fetch TCP FIN。后端自动清理。
-
-### POST /chat/stop/{requestId}
-可选的显式取消端点（当前端不方便关连接时）。
-
-**Response 204**。
-
----
-
-## 4. Masks
-
-### GET /masks
-**Query**：`cursor?`、`limit?`、`q?`（按 name/tags 模糊搜索）、`mine?`（只看自己的）。
+- `messages` 当前至少一条，DTO 允许传多条；前端主路径通常只传本次新增消息
+- `provider`、`model`、`maskId`、`reasoningEffort`、`apiKeyId` 都是可选覆盖项
+- `tools` 为可选字段，元素是工具名字符串
+- 当 `provider=openai` 且 `tools` 为非空列表时，后端会按请求里的工具名子集筛选已启用工具；未知工具名会返回 `VALIDATION_FAILED`
+- 当 `tools` 省略或传空数组时，`openai` 路径保持兼容行为：自动挂载全部已启用工具
+- `anthropic` / `gemini` 当前仍不走同等工具注入路径；即使请求携带 `tools`，也不会像 `openai` 一样附带工具定义
 
 **Response 200**
+
+返回 SSE 事件流。
+
+### SSE 事件体
+
+所有事件都以 JSON `data:` 发送，字段形态如下：
+
+```json
+{
+  "type": "delta",
+  "messageId": null,
+  "requestId": null,
+  "content": "partial text",
+  "prompt": null,
+  "completion": null,
+  "finishReason": null,
+  "code": null,
+  "message": null,
+  "toolCallId": null,
+  "toolName": null,
+  "toolArguments": null,
+  "toolResult": null
+}
+```
+
+当前会发出的 `type`：
+
+- `start`
+- `delta`
+- `usage`
+- `done`
+- `error`
+- `tool_call`
+- `tool_result`
+
+示例：
+
+```json
+{ "type": "start", "messageId": "1002", "requestId": "req_123" }
+```
+
+```json
+{ "type": "delta", "content": "Hello" }
+```
+
+```json
+{ "type": "usage", "prompt": 12, "completion": 28 }
+```
+
+```json
+{ "type": "tool_call", "toolCallId": "call_1", "toolName": "calculator", "toolArguments": { "expression": "2+2" } }
+```
+
+```json
+{ "type": "tool_result", "toolCallId": "call_1", "toolName": "calculator", "toolResult": "4" }
+```
+
+```json
+{ "type": "done", "finishReason": "stop" }
+```
+
+```json
+{ "type": "error", "code": "LLM_UPSTREAM_ERROR", "message": "provider error" }
+```
+
+## 5. Providers
+
+### GET /providers
+
+返回当前可见 provider 列表、模型、服务端 key 可用状态和用户自有 key 摘要。
+
+**Response 200**
+
 ```json
 {
   "items": [
-    { "id": "1", "ownerId": null, "name": "代码审查员", "avatar": "🧐", "systemPrompt": "...",
-      "defaultProvider": "openai", "defaultModel": "gpt-4o-mini",
-      "temperature": 0.3, "topP": 1.0, "maxTokens": null,
-      "tags": ["code","review"], "isPublic": true,
-      "createdAt": "...", "updatedAt": "..." }
+    {
+      "name": "openai",
+      "displayName": "OpenAI Compatible",
+      "available": true,
+      "models": [
+        {
+          "id": "gpt-4o-mini",
+          "displayName": "gpt-4o-mini",
+          "contextWindow": 128000,
+          "supportsTools": true
+        }
+      ],
+      "hasServerKey": true,
+      "userKeys": [
+        { "id": "7", "label": "my key" }
+      ]
+    }
+  ]
+}
+```
+
+## 6. API Keys
+
+### GET /api-keys
+
+**Response 200**
+
+```json
+{
+  "items": [
+    {
+      "id": "7",
+      "provider": "openai",
+      "label": "my key",
+      "baseUrl": null,
+      "last4": "abcd",
+      "createdAt": "2026-04-25T10:20:30Z"
+    }
+  ]
+}
+```
+
+### POST /api-keys
+
+**Request**
+
+```json
+{
+  "provider": "openai",
+  "label": "my key",
+  "baseUrl": null,
+  "key": "sk-..."
+}
+```
+
+**Response 201**
+
+```json
+{
+  "id": "7",
+  "provider": "openai",
+  "label": "my key",
+  "baseUrl": null,
+  "last4": "abcd",
+  "createdAt": "2026-04-25T10:20:30Z"
+}
+```
+
+### DELETE /api-keys/{id}
+
+**Response 204**
+
+## 7. Masks
+
+### GET /masks
+
+**Query**
+
+- `cursor?`
+- `limit?`，默认 `20`，最大 `100`
+- `q?`
+- `mine?`，默认 `false`
+
+**Response 200**
+
+```json
+{
+  "items": [
+    {
+      "id": "1",
+      "ownerId": null,
+      "name": "程序员助手（通用）",
+      "avatar": "🛠️",
+      "systemPrompt": "你是一位资深软件工程师。",
+      "defaultProvider": "openai",
+      "defaultModel": "gpt-4o-mini",
+      "temperature": 0.4,
+      "topP": 1.0,
+      "maxTokens": null,
+      "tags": ["code", "engineering", "general"],
+      "isPublic": true,
+      "createdAt": "2026-04-25T10:20:30Z",
+      "updatedAt": "2026-04-25T10:20:30Z"
+    }
   ],
   "nextCursor": null
 }
@@ -352,155 +470,128 @@ data: {"type":"error","code":"LLM_UPSTREAM_ERROR","message":"429 rate limit from
 ### POST /masks
 
 **Request**
+
 ```json
 {
-  "name": "Python 导师",
-  "avatar": "🐍",
-  "systemPrompt": "你是一位 Python 教学专家...",
+  "name": "My Mask",
+  "avatar": "🤖",
+  "systemPrompt": "你是一个有条理的助手。",
   "defaultProvider": "openai",
   "defaultModel": "gpt-4o-mini",
   "temperature": 0.5,
   "topP": 1.0,
   "maxTokens": null,
-  "tags": ["python","teaching"],
+  "tags": ["assistant"],
   "isPublic": false
 }
 ```
 
-**Response 201**：mask 对象。
+**Response 201**：返回单个 mask 对象
 
-### GET /masks/{id} · PATCH /masks/{id} · DELETE /masks/{id}
-标准 CRUD；只能改 / 删自己 `ownerId` 的。系统 mask（`ownerId=null`）任何人都不能改。
+### GET /masks/{id}
 
-### POST /masks/import
-导入 NextChat JSON。
+**Response 200**：返回单个 mask 对象
 
-**Request**：`{ "source": "nextchat", "json": <NextChat mask json 或 array> }`
+### PATCH /masks/{id}
 
-**Response 200**：`{ "imported": [<mask>, ...], "skipped": [...] }`
+**Response 200**：返回更新后的 mask 对象
 
-字段映射：
-| NextChat | jchat |
-|---|---|
-| `name` | `name` |
-| `avatar` | `avatar` |
-| `context[].role=system` 的 content | `systemPrompt`（首条） |
-| `modelConfig.model` | `defaultModel` |
-| `modelConfig.temperature` | `temperature` |
-| `modelConfig.top_p` | `topP` |
-| `modelConfig.max_tokens` | `maxTokens` |
+### DELETE /masks/{id}
 
-（v1 不支持 few-shot 注入，非 system 的 context 消息丢弃 + 记 warning）
+**Response 204**
 
-### GET /masks/{id}/export
-导出。**Query** `format=nextchat|jchat`（默认 jchat）。返回 JSON 文件下载。
+当前未实现：
 
----
+- `POST /masks/import`
+- `GET /masks/{id}/export`
 
-## 5. API Keys
+## 8. Plugins
 
-### GET /api-keys
-列表。**不返回 key 明文**，只返 label + 末 4 位。
+### GET /plugins
+
+返回当前后端注册的工具列表。
 
 **Response 200**
-```json
-{ "items": [
-  { "id": "1", "provider": "openai", "label": "我的个人 key", "last4": "Ab12", "createdAt": "..." }
-] }
-```
 
-### POST /api-keys
-
-**Request**：`{ "provider": "openai", "label": "...", "baseUrl": "https://proxy.example.com/v1", "key": "sk-..." }`
-
-**Response 201**：同上单项（不含 key）。
-
-### DELETE /api-keys/{id}
-**Response 204**。
-
----
-
-## 6. Files
-
-### POST /files
-**Content-Type**: `multipart/form-data`
-
-**form fields**：`file`（binary）、`conversationId?`（可选）
-
-**Response 201**
-```json
-{
-  "id": "7", "filename": "spec.pdf", "mimeType": "application/pdf",
-  "sizeBytes": 123456, "sha256": "...", "status": "processing",
-  "createdAt": "..."
-}
-```
-`status`: `processing` | `ready` | `failed`。抽文本完成后变 `ready`。
-
-**限制**：单文件 ≤ 50MB；用户 10/hour。
-
-### GET /files
-列表。**Query**：`cursor?`、`limit?`、`conversationId?`。
-
-### GET /files/{id}
-元数据。
-
-### GET /files/{id}/download
-下载原文件（stream）。
-
-### DELETE /files/{id}
-**Response 204**（软删 + 异步清理磁盘）。
-
----
-
-## 7. Providers & Plugins
-
-### GET /providers
 ```json
 {
   "items": [
     {
-      "name": "openai",
-      "displayName": "OpenAI 兼容",
-      "available": true,
-      "models": [
-        { "id": "gpt-4o-mini", "displayName": "GPT-4o mini", "contextWindow": 128000, "supportsTools": true },
-        ...
-      ],
-      "hasServerKey": true,
-      "userKeys": [{ "id": "1", "label": "我的 key" }]
-    },
-    { "name": "anthropic", "available": false, ... }
+      "name": "calculator",
+      "displayName": "Calculator",
+      "description": "Evaluate math expressions",
+      "enabled": true,
+      "disabledReason": null,
+      "jsonSchema": {}
+    }
   ]
 }
 ```
-`available`：服务端有 key 或用户有 key。
 
-### GET /plugins
-已启用的内置工具清单。
+## 9. Files
+
+### POST /files
+
+`multipart/form-data`
+
+字段：
+
+- `file`：必填
+- `conversationId`：可选
+
+**Response 201**
+
+```json
+{
+  "id": "12",
+  "conversationId": "42",
+  "filename": "notes.txt",
+  "mimeType": "text/plain",
+  "sizeBytes": 128,
+  "sha256": "abc123",
+  "status": "processing",
+  "errorMessage": null,
+  "createdAt": "2026-04-25T10:20:30Z"
+}
+```
+
+### GET /files
+
+**Query**
+
+- `cursor?`
+- `limit?`，默认 `20`，最大 `100`
+- `conversationId?`
+
+**Response 200**
+
 ```json
 {
   "items": [
-    { "name": "calculator", "displayName": "计算器", "description": "...", "enabled": true, "schema": {...} },
-    { "name": "weather",    "enabled": true, ... },
-    { "name": "web_search", "enabled": false, "disabledReason": "no SerpAPI key configured" },
-    { "name": "http_fetch", "enabled": true, ... }
-  ]
+    {
+      "id": "12",
+      "conversationId": "42",
+      "filename": "notes.txt",
+      "mimeType": "text/plain",
+      "sizeBytes": 128,
+      "sha256": "abc123",
+      "status": "ready",
+      "errorMessage": null,
+      "createdAt": "2026-04-25T10:20:30Z"
+    }
+  ],
+  "nextCursor": null
 }
 ```
 
----
+### GET /files/{id}
 
-## 8. 健康检查 / 运维
+**Response 200**：返回单个 file 对象
 
-### GET /health
-公开（无需鉴权）。返回 `{ "status": "UP" }`。
+### GET /files/{id}/download
 
-### GET /actuator/**
-Spring Actuator；prod 配置仅暴露 `/actuator/health`，其他 endpoints 需要 admin 角色或内网 IP 限制。
+返回文件二进制内容。
 
----
+### DELETE /files/{id}
 
-## 9. 版本演进
-
-**v1 → v2 时若有 breaking change**：新开 `/api/v2`，v1 至少保留 3 个月。非 breaking 的字段新增不加版本。
+**Response 204**
