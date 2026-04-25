@@ -106,7 +106,7 @@ function getDefaultSelection(providers: ProviderInfo[]) {
 export function ChatPage() {
   const navigate = useNavigate();
   const { conversationId } = useParams();
-  const { copy, locale } = usePreferences();
+  const { copy, getDefaultApiKeyId, locale } = usePreferences();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const [isOnline, setIsOnline] = useState(() =>
     typeof navigator === "undefined" ? true : navigator.onLine
@@ -368,9 +368,11 @@ export function ChatPage() {
     }
 
     setSelectedApiKeyId((current) =>
-      currentProviderInfo.userKeys.some((apiKey) => apiKey.id === current) ? current : ""
+      currentProviderInfo.userKeys.some((apiKey) => apiKey.id === current)
+        ? current
+        : getDefaultApiKeyId(currentProviderInfo.name)
     );
-  }, [currentProviderInfo]);
+  }, [currentProviderInfo, getDefaultApiKeyId]);
 
   useEffect(() => {
     setModelDraft(currentConversation?.model ?? "");
@@ -800,7 +802,7 @@ export function ChatPage() {
                     onChange={(event) => setSelectedApiKeyId(event.target.value)}
                     value={selectedApiKeyId}
                   >
-                    <option value="">{copy.common.serverKey}</option>
+                    <option value="">{copy.chat.followSettings}</option>
                     {(currentProviderInfo?.userKeys ?? []).map((apiKey) => (
                       <option key={apiKey.id} value={apiKey.id}>
                         {apiKey.label}

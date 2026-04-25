@@ -151,6 +151,8 @@ dd {
 .shell {
   grid-template-columns: 260px minmax(0, 1fr);
   background: var(--bg);
+  height: 100vh;
+  overflow: hidden;
 }
 
 .public-shell {
@@ -167,6 +169,11 @@ dd {
   border-right: 1px solid var(--border);
 }
 
+.shell-sidebar {
+  height: 100vh;
+  overflow: auto;
+}
+
 .shell-main,
 .public-content-panel {
   padding: 16px 20px;
@@ -176,6 +183,9 @@ dd {
   display: grid;
   grid-template-rows: auto 1fr;
   gap: 16px;
+  min-height: 0;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .shell-sidebar__header,
@@ -313,7 +323,9 @@ dd {
 .provider-card__header,
 .stacked-list__item--actions,
 .mask-card__header,
-.composer__toolbar {
+.composer__toolbar,
+.settings-section__header,
+.modal-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -338,6 +350,11 @@ dd {
 .public-main {
   display: grid;
   align-content: start;
+}
+
+.shell-content {
+  min-height: 0;
+  overflow: hidden;
 }
 
 .muted,
@@ -459,7 +476,9 @@ dd {
 .mask-card,
 .stacked-list__item,
 .profile-list div,
-.tool-call-card {
+.tool-call-card,
+.settings-key-group,
+.modal-card {
   display: grid;
   gap: 10px;
   padding: 14px;
@@ -641,6 +660,8 @@ dd {
   gap: 16px;
   align-items: stretch;
   min-height: 0;
+  height: 100%;
+  overflow: hidden;
 }
 
 .chat-sidebar {
@@ -649,6 +670,7 @@ dd {
   gap: 14px;
   min-height: 0;
   padding: 14px;
+  overflow: hidden;
 }
 
 .chat-sidebar__meta {
@@ -712,6 +734,8 @@ dd {
   grid-template-rows: auto auto auto minmax(0, 1fr) auto;
   gap: 12px;
   min-height: 0;
+  height: 100%;
+  overflow: hidden;
   padding: 0;
   border: 0;
   background: transparent;
@@ -869,6 +893,55 @@ dd {
   min-height: 18px;
 }
 
+.settings-section__header {
+  margin-bottom: 12px;
+}
+
+.settings-key-group {
+  gap: 12px;
+  background: var(--bg-muted);
+}
+
+.settings-key-workspace {
+  display: grid;
+  gap: 12px;
+}
+
+.settings-key-workspace__providers {
+  max-width: 100%;
+}
+
+.settings-key-group__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-key-group__list {
+  max-height: 320px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.modal-card {
+  width: min(560px, 100%);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22);
+}
+
 @media (max-width: 1180px) {
   .shell,
   .public-shell,
@@ -879,10 +952,25 @@ dd {
     grid-template-columns: 1fr;
   }
 
+  .shell {
+    height: auto;
+    overflow: visible;
+  }
+
   .shell-sidebar,
   .public-brand-panel {
     border-right: 0;
     border-bottom: 1px solid var(--border);
+    height: auto;
+    overflow: visible;
+  }
+
+  .shell-main,
+  .shell-content,
+  .chat-layout,
+  .chat-main {
+    height: auto;
+    overflow: visible;
   }
 
   .chat-toolbar__controls {
@@ -908,6 +996,9 @@ dd {
   .stacked-list__item--actions,
   .mask-card__header,
   .composer__toolbar,
+  .settings-section__header,
+  .settings-key-group__header,
+  .modal-card__header,
   .message-bubble__meta,
   .chat-main__title-row,
   .preference-row {
